@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+ <plugin>
+<extension point="org.eclipse.ui.actionSets">
+		<actionSet label="refactoring rwlock" visible="true" id="refactoring.actionSet">
+			<menu label="Refactor " path="source" id="org.eclipse.jdt.ui.refactoring.menu">
+				<separator name="rgGroup"/>
+			</menu>
+   		
+			<action class="rwlockrefactoring.actions.RefactorManageAction"
+				icon="icons/logo.jpg"
+				label="refactorRWlock"
+				id="rwlockrefactoring.actions.RefactorManageAction"
+				menubarPath="org.eclipse.jdt.ui.refactoring.menu/ssGroup"
+            	toolbarPath="ssGroup"
+            	tooltip="Refactoring rwLock in Java Project"/> 
+      		</actionSet>
+  	</extension>
+</plugin>

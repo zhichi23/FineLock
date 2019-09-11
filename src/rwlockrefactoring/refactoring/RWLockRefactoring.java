@@ -360,6 +360,7 @@ public class RWLockRefactoring extends Refactoring {
 					} else {
 						writelockToMethod(ast,m,inmap.get(m),result);
 						sy_write_num++;
+						
 					}
 				
 				}

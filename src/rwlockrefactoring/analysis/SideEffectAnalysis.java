@@ -49,7 +49,7 @@ import rwlockrefactoring.util.RWString;
  * 
  * 
  * @author Shao
- * @version 2.0
+ * @version 4.0_01
  */
 public class SideEffectAnalysis {
 

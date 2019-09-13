@@ -67,7 +67,7 @@ import rwlockrefactoring.util.RWString;
  * also done through this class
  * 
  * @author Shao
- * @version 3.0
+ * @version 4.0_01
  * 
  */
 public class RWLockRefactoring extends Refactoring {

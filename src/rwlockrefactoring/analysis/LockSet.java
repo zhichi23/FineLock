@@ -18,6 +18,7 @@ import com.ibm.wala.ipa.cha.ClassHierarchy;
 /**
  *  
  * @author Shao
+ * @version 4.0_01
  * lock{0} 静态字段对应的锁
  * tlock this和同步方法对应的锁
  * stlock 静态方法和getclass

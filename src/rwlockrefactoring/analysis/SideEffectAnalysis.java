@@ -124,8 +124,6 @@ public class SideEffectAnalysis {
 					list = new ArrayList<String>();
 					map.put(linenum.get(set.next()), list);
 				}
-				//System.out.println(method + ">>>" + map);
-				//System.out.println(method + ">>>" + linenum);
 				while (l < instructions.size()) {
 					sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
@@ -150,7 +148,6 @@ public class SideEffectAnalysis {
 		for (CGNode n : cg) {
 			if (n.getMethod().getName().toString().equals(method)
 					&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
-				//System.out.println(method+"+"+cla);
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 				
 				if (ir == null|| ir.getMethod() instanceof SummarizedMethod) {
@@ -158,7 +155,6 @@ public class SideEffectAnalysis {
 				}
 				IBytecodeMethod bytemethod = (IBytecodeMethod) ir.getMethod();
 				// 串
-				// Iterator<CGNode> iter=cg.getSuccNodes(n);
 				List<String> tmp = new LinkedList<String>();
 				Iterator<SSAInstruction> instruction = ir.iterateAllInstructions();
 
@@ -188,7 +184,6 @@ public class SideEffectAnalysis {
 					list = new ArrayList<String>();
 					map.put(linenum.get(set.next()), list);
 				}
-				//System.out.println(map);
 				while (l < instructions.size()) {
 					sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
@@ -226,7 +221,6 @@ public class SideEffectAnalysis {
 				// 遍历方法中的所有指令
 				while (instruction.hasNext()) {
 					SSAInstruction ins = instruction.next();
-					//System.out.println(ins);
 					instructions.add(ins);
 				}
 
@@ -250,7 +244,6 @@ public class SideEffectAnalysis {
 					list = new ArrayList<String>();
 					map.put(linenum.get(set.next()), list);
 				}
-				//System.out.println(map);
 				while (l < instructions.size()) {
 					sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
@@ -612,7 +605,6 @@ public class SideEffectAnalysis {
 		StringBuffer sb = new StringBuffer();
 		List<Character> tmp = new ArrayList<Character>();
 		String s = getsToBlock();
-		//System.out.println(s);
 		char[] c = s.toCharArray();
 		for (int i = 0; i < c.length; i++) {
 			if (c[i] == 'M') {

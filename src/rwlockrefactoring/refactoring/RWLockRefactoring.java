@@ -104,8 +104,8 @@ public class RWLockRefactoring extends Refactoring {
 	int bl_read_num = 0;
 	int bl_write_num = 0;
 
-	
-	Map<String,Integer> countmap=new HashMap<String, Integer>();
+	Map<String, Integer> countmap = new HashMap<String, Integer>();
+
 	/**
 	 * construction method
 	 * 
@@ -191,7 +191,7 @@ public class RWLockRefactoring extends Refactoring {
 			}
 		} else if (project instanceof IJavaElement) {
 			try {
-				IJavaElement  element1=(IJavaElement) project;
+				IJavaElement element1 = (IJavaElement) project;
 				if (element1.getElementName().equals("java")) {
 					IPackageFragmentRoot root = (IPackageFragmentRoot) element1;
 					for (IJavaElement ele : root.getChildren()) {
@@ -203,24 +203,25 @@ public class RWLockRefactoring extends Refactoring {
 							}
 						}
 					}
-				}else {
-				// 遍历工程下的所有文件
-				for (IJavaElement element : ((IJavaProject) project).getChildren()) {
-					// 遍历src下面的所有包
-					if (element.getElementName().equals("src")) {
-						IPackageFragmentRoot root = (IPackageFragmentRoot) element;
-						for (IJavaElement ele : root.getChildren()) {
-							if (ele instanceof IPackageFragment) {
-								IPackageFragment fragment = (IPackageFragment) ele;
-								// 遍历所有类
-								for (ICompilationUnit unit : fragment.getCompilationUnits()) {
-									compilationUnits.add(unit);
+				} else {
+					// 遍历工程下的所有文件
+					for (IJavaElement element : ((IJavaProject) project).getChildren()) {
+						// 遍历src下面的所有包
+						if (element.getElementName().equals("src")) {
+							IPackageFragmentRoot root = (IPackageFragmentRoot) element;
+							for (IJavaElement ele : root.getChildren()) {
+								if (ele instanceof IPackageFragment) {
+									IPackageFragment fragment = (IPackageFragment) ele;
+									// 遍历所有类
+									for (ICompilationUnit unit : fragment.getCompilationUnits()) {
+										compilationUnits.add(unit);
+									}
 								}
 							}
 						}
 					}
 				}
-			} }catch (JavaModelException e) {
+			} catch (JavaModelException e) {
 				e.printStackTrace();
 			}
 		}
@@ -242,7 +243,7 @@ public class RWLockRefactoring extends Refactoring {
 		// 构建调用图
 		callgraph = cg.callgraph();
 		for (IJavaElement element : compilationUnits) {
-			
+
 			// 创建一个document(jface)
 			ICompilationUnit cu = (ICompilationUnit) element;
 			String source = cu.getSource();
@@ -251,43 +252,44 @@ public class RWLockRefactoring extends Refactoring {
 			ASTParser parser = ASTParser.newParser(AST.JLS11);
 			parser.setSource(cu);
 			CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
-			rewrite=ASTRewrite.create(astRoot.getAST());;
+			rewrite = ASTRewrite.create(astRoot.getAST());
 			// 记录更改
 			astRoot.recordModifications();
 
 			// 找到synchronized方法
-			//List<MethodDeclaration> methods = new ArrayList<MethodDeclaration>();
+			// List<MethodDeclaration> methods = new ArrayList<MethodDeclaration>();
 			List<TypeDeclaration> types = new ArrayList<TypeDeclaration>();
-			//getMethods(astRoot.getRoot(), methods);
+			// getMethods(astRoot.getRoot(), methods);
 			getTypes(astRoot.getRoot(), types);
 			for (TypeDeclaration ty : types) {
 				countmap.put(ty.getName().toString(), 0);
 			}
 
 			for (TypeDeclaration ty : types) {
-//				System.out.println(ty.getName().toString());
-				List<String> lockex=new LinkedList<String>();
-				Map<MethodDeclaration,String> inmap=new HashMap<MethodDeclaration, String>();
-				getlockex(lockex, inmap,ty);
-				LockSet ls=new LockSet(cg.pointer(),cg.cha());
+				List<String> lockex = new LinkedList<String>();
+				Map<MethodDeclaration, String> inmap = new HashMap<MethodDeclaration, String>();
+				//获取当前类的所有锁句柄
+				getlockex(lockex, inmap, ty);
+				LockSet ls = new LockSet(cg.pointer(), cg.cha());
 				ls.lockmap(lockex, ty.getName().toString());
-				collectChanges(astRoot,ty,ls,inmap);
-				
-			}
+				collectChanges(astRoot, ty, ls, inmap);
 
+			}
+			// TODO:待解决MalformedTreeException
 			try {
 				TextEdit edits = astRoot.rewrite(document, cu.getJavaProject().getOptions(true));
 				TextFileChange change = new TextFileChange("", (IFile) cu.getResource());
 				change.setEdit(edits);
 				changeManager.add(change);
 			} catch (MalformedTreeException e) {
-				// TODO: handle exception
+				
 				e.getMessage();
 			}
+			
 
 		}
 		print_num();
-		//System.out.println(countmap);
+
 	}
 
 	/**
@@ -308,110 +310,113 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean collectChanges(CompilationUnit root,TypeDeclaration types,LockSet ls,Map<MethodDeclaration,String> inmap) throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException, UnsupportedOperationException, IOException, InvalidClassFileException {
+	private boolean collectChanges(CompilationUnit root, TypeDeclaration types, LockSet ls,
+			Map<MethodDeclaration, String> inmap) throws IllegalArgumentException, CallGraphBuilderCancelException,
+			ClassHierarchyException, UnsupportedOperationException, IOException, InvalidClassFileException {
 		AST ast = types.getAST();
 		ImportDeclaration id1 = ast.newImportDeclaration();
 		ImportDeclaration id2 = ast.newImportDeclaration();
-		
+
 		id1.setName(ast.newName(new String[] { "java", "util", "concurrent", "locks", "ReentrantReadWriteLock" }));
 		id2.setName(ast.newName(new String[] { "java", "util", "concurrent", "locks", "Lock" }));
-		
-		MethodDeclaration[] ms=types.getMethods();
-		List<String> tmp=new LinkedList<String>();
-		Map<String,String> result=new HashMap<String, String>();
-		if(synMethod) {
-			decalock(ast, types, ls, tmp,result);
-			for(MethodDeclaration m:ms) {
-			for (int i = 0; i < m.modifiers().size(); i++) {
-				if (m.modifiers().get(i).toString().equals("synchronized")) {
-					SideEffectAnalysis sda1 = new SideEffectAnalysis(callgraph);
-					countmap.put(types.getName().toString(), countmap.get(types.getName().toString())+1);
-					String rws = sda1.sideEffect(m.getName().toString(), types.getName().toString(), m.parameters());
-					String rws1 = sda1.getsToMethod();
-					String rws2 = sda1.makeReToMethod();
-					DFA down_dfa = new DFA(rws1);
-					addImport(root.imports(), id1);
-					addImport(root.imports(), id2);
-					m.modifiers().remove(i);
-					if (rws1 == null||rws==null) {
-						writelockToMethod(ast,m,inmap.get(m),result);
-						sy_write_num++;
-					} else if (down_dfa.makedfa()) {
-						downgradeToMethod(ast,m,inmap.get(m),result);
-						sy_down_num++;
-					} else if (up_nfa_method.recognizes(rws2)) {
-						upgradeToMethod(ast, m, inmap.get(m), result, rws2);
+
+		MethodDeclaration[] ms = types.getMethods();
+		List<String> tmp = new LinkedList<String>();
+		Map<String, String> result = new HashMap<String, String>();
+		if (synMethod) {
+			decalock(ast, types, ls, tmp, result);
+			for (MethodDeclaration m : ms) {
+				for (int i = 0; i < m.modifiers().size(); i++) {
+					if (m.modifiers().get(i).toString().equals("synchronized")) {
+						SideEffectAnalysis sda1 = new SideEffectAnalysis(callgraph);
+						countmap.put(types.getName().toString(), countmap.get(types.getName().toString()) + 1);
+						String rws = sda1.sideEffect(m.getName().toString(), types.getName().toString(),
+								m.parameters());
+						String rws1 = sda1.getsToMethod();
+						String rws2 = sda1.makeReToMethod();
+						DFA down_dfa = new DFA(rws1);
+						addImport(root.imports(), id1);
+						addImport(root.imports(), id2);
+						m.modifiers().remove(i);
+						if (rws1 == null || rws == null) {
+							writelockToMethod(ast, m, inmap.get(m), result);
+							sy_write_num++;
+						} else if (down_dfa.makedfa()) {
+							downgradeToMethod(ast, m, inmap.get(m), result);
+							sy_down_num++;
+						} else if (up_nfa_method.recognizes(rws2)) {
+							upgradeToMethod(ast, m, inmap.get(m), result, rws2);
 //						if (upgrade(ast, types, m, 1, bl, rws2)) {
 //							sy_up_num++;
 //						} else {
 //							sy_write_num++;
 //						}
 
-					} else if (down_nfa_method.recognizes(rws2)) {
-						downgradeToMethod2(ast,m,inmap.get(m),result,rws2);
+						} else if (down_nfa_method.recognizes(rws2)) {
+							downgradeToMethod2(ast, m, inmap.get(m), result, rws2);
 //						if (downgrade(ast, types, m, 2, bl, rws2)) {
 //							sy_down_num++;
 //						} else {
 //							sy_write_num++;
 //						}
-					} else if (!rws1.contains(RWSign.WRITE_SIGN)) {
-						readlockToMethod(ast, m, inmap.get(m), result);
-						sy_read_num++;
-					} else {
-						writelockToMethod(ast,m,inmap.get(m),result);
-						sy_write_num++;
-						
+						} else if (!rws1.contains(RWSign.WRITE_SIGN)) {
+							readlockToMethod(ast, m, inmap.get(m), result);
+							sy_read_num++;
+						} else {
+							writelockToMethod(ast, m, inmap.get(m), result);
+							sy_write_num++;
+
+						}
+
 					}
-				
 				}
-			}
 			}
 		}
 		if (synBlock) {
-			//System.out.println("taiguanjian"+tmp);
-			decalock(ast, types, ls, tmp,result);
-			System.out.println(result);
-			// if (o != null) {
-			for(MethodDeclaration m:ms) {
-			for (int b = 0; b < m.getBody().statements().size(); b++) {
-				if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
-					SynchronizedStatement sst=(SynchronizedStatement)m.getBody().statements().get(b);
-					
-					SideEffectAnalysis sda2 = new SideEffectAnalysis(callgraph);
-					String rws2 = sda2.sideEffect(m.getName().toString());
-					addImport(root.imports(), id1);
-					addImport(root.imports(), id2);
-					
-					//writelockToBlock(ast,m,ls,tmp, b,sst.getExpression().toString(),result);
-					if (rws2 == null) {
-						writelockToBlock(ast,m,b,sst.getExpression().toString(),result);
-						bl_write_num++;
-					} else if (down_nfa_block.recognizes(sda2.makeReToBlock())) {
-						if(sda2.makeReToBlock()==null) {
-							downgradeToBlock(ast,m,b,sst.getExpression().toString(),result);
-						}else {
-							downgradeToBlock2(ast,m,b,sst.getExpression().toString(),result,sda2.makeReToBlock());
+			decalock(ast, types, ls, tmp, result);
+			for (MethodDeclaration m : ms) {
+				for (int b = 0; b < m.getBody().statements().size(); b++) {
+					if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
+						SynchronizedStatement sst = (SynchronizedStatement) m.getBody().statements().get(b);
+						String tolock = null;
+						if (sst.getExpression().toString().equals("getClass()")) {
+							tolock = "static";
+						} else {
+							tolock = sst.getExpression().toString();
 						}
-						bl_down_num++;
-					} else if (up_nfa_block.recognizes(sda2.makeReToBlock())) {
-						upgradeToBlock(ast,m,b,sst.getExpression().toString(),result,sda2.makeReToBlock());
-						bl_up_num++;
-					} else if (!rws2.contains(RWSign.WRITE_SIGN)) {
-						readlockToBlock(ast,m,b,sst.getExpression().toString(),result);
-						bl_read_num++;
-					} else {
-						writelockToBlock(ast,m,b,sst.getExpression().toString(),result);
-						bl_write_num++;
+						SideEffectAnalysis sda2 = new SideEffectAnalysis(callgraph);
+						String rws2 = sda2.sideEffect(m.getName().toString());
+						addImport(root.imports(), id1);
+						addImport(root.imports(), id2);
+
+						// writelockToBlock(ast,m,ls,tmp, b,sst.getExpression().toString(),result);
+						if (rws2 == null) {
+							writelockToBlock(ast, m, b, tolock, result);
+							bl_write_num++;
+						} else if (down_nfa_block.recognizes(sda2.makeReToBlock())) {
+							if (sda2.makeReToBlock() == null) {
+								downgradeToBlock(ast, m, b, tolock, result);
+							} else {
+								downgradeToBlock2(ast, m, b, tolock, result, sda2.makeReToBlock());
+							}
+							bl_down_num++;
+						} else if (up_nfa_block.recognizes(sda2.makeReToBlock())) {
+							upgradeToBlock(ast, m, b, tolock, result, sda2.makeReToBlock());
+							bl_up_num++;
+						} else if (!rws2.contains(RWSign.WRITE_SIGN)) {
+							readlockToBlock(ast, m, b, tolock, result);
+							bl_read_num++;
+						} else {
+							writelockToBlock(ast, m, b, tolock, result);
+							bl_write_num++;
+						}
 					}
 				}
 			}
 		}
-		}
 		return true;
-		
+
 	}
-	
-	
 
 	/**
 	 * set modifiers of the field
@@ -420,16 +425,14 @@ public class RWLockRefactoring extends Refactoring {
 	 * @param ast
 	 */
 	@SuppressWarnings("unchecked")
-	private void aadfieldModifiers(FieldDeclaration f, AST ast,boolean flag) {
-		if(flag) {
-		f.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-		f.modifiers().add(ast.newModifier(ModifierKeyword.STATIC_KEYWORD));
-		}else {
+	private void aadfieldModifiers(FieldDeclaration f, AST ast, boolean flag) {
+		if (flag) {
+			f.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
+			f.modifiers().add(ast.newModifier(ModifierKeyword.STATIC_KEYWORD));
+		} else {
 			f.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 		}
 	}
-	
-
 
 	/**
 	 * add imports of the class
@@ -440,7 +443,7 @@ public class RWLockRefactoring extends Refactoring {
 	private void addImport(List<ImportDeclaration> root, ImportDeclaration id) {
 		int ip = 0;
 		// 防止重复import
-		if (root != null&&root.size()!=0) {
+		if (root != null && root.size() != 0) {
 			for (int im1 = 0; im1 < root.size(); im1++) {
 				if (!root.get(im1).toString().equals(id.toString())) {
 					ip++;
@@ -450,7 +453,7 @@ public class RWLockRefactoring extends Refactoring {
 				root.add(id);
 			}
 		} else {
-			//可能存在问题
+			// 可能存在问题
 			root.add(id);
 		}
 	}
@@ -488,51 +491,48 @@ public class RWLockRefactoring extends Refactoring {
 	 * @param lock
 	 * @return
 	 */
-	public ExpressionStatement exp(AST ast, String lockname,String rw, String lock) {
+	public ExpressionStatement exp(AST ast, String lockname, String rw, String lock) {
 		MethodInvocation addreadlock = ast.newMethodInvocation();
-		System.out.println(lockname);
 		addreadlock.setExpression(ast.newSimpleName(lockname));
-		//addreadlock.
-		//addreadlock.setExpression(ast.newSimpleName());
+		// addreadlock.
+		// addreadlock.setExpression(ast.newSimpleName());
 		addreadlock.setName(ast.newSimpleName(rw));
 		ExpressionStatement ex = ast.newExpressionStatement(addreadlock);
-		
-		Expression tmp=ex.getExpression();
+
+		Expression tmp = ex.getExpression();
 		ex.setExpression(ast.newCastExpression());
-		MethodInvocation addreadloc= ast.newMethodInvocation();
-	
+		MethodInvocation addreadloc = ast.newMethodInvocation();
+
 		addreadloc.setExpression(tmp);
 		addreadloc.setName(ast.newSimpleName(lock));
-		ExpressionStatement ex1= ast.newExpressionStatement(addreadloc);
+		ExpressionStatement ex1 = ast.newExpressionStatement(addreadloc);
 		return ex1;
 	}
-	
+
 	public ExpressionStatement exp(AST ast, String rw, String lock) {
 		MethodInvocation addreadlock = ast.newMethodInvocation();
 		addreadlock.setExpression(ast.newSimpleName("ss"));
-		//addreadlock.
-		//addreadlock.setExpression(ast.newSimpleName());
+		// addreadlock.
+		// addreadlock.setExpression(ast.newSimpleName());
 		addreadlock.setName(ast.newSimpleName(rw));
 		ExpressionStatement ex = ast.newExpressionStatement(addreadlock);
-		
-		Expression tmp=ex.getExpression();
+
+		Expression tmp = ex.getExpression();
 		ex.setExpression(ast.newCastExpression());
-		MethodInvocation addreadloc= ast.newMethodInvocation();
-	
+		MethodInvocation addreadloc = ast.newMethodInvocation();
+
 		addreadloc.setExpression(tmp);
 		addreadloc.setName(ast.newSimpleName(lock));
-		ExpressionStatement ex1= ast.newExpressionStatement(addreadloc);
+		ExpressionStatement ex1 = ast.newExpressionStatement(addreadloc);
 		return ex1;
 	}
 
-
-
 	@SuppressWarnings("unchecked")
-	private void readlockToMethod(AST ast, MethodDeclaration m,String ex,Map<String,String> result) {
-		String lockname=result.get(ex); 
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+	private void readlockToMethod(AST ast, MethodDeclaration m, String ex, Map<String, String> result) {
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		TryStatement trystate = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
 		Block tryblock = ast.newBlock();
@@ -549,12 +549,12 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void readlockToBlock(AST ast, MethodDeclaration m, int bl,String ex,Map<String,String> result) {
-		 String lockname=result.get(ex); 
+	private void readlockToBlock(AST ast, MethodDeclaration m, int bl, String ex, Map<String, String> result) {
+		String lockname = result.get(ex);
 		// 加锁
-		ExpressionStatement exstate = exp(ast,lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		Block tmp = ast.newBlock();
 
 		tmp = ((SynchronizedStatement) m.getBody().statements().get(bl)).getBody();
@@ -573,12 +573,12 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void writelockToMethod(AST ast, MethodDeclaration m,String ex,Map<String,String> result) {
-		
-		String lockname=result.get(ex); 
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+	private void writelockToMethod(AST ast, MethodDeclaration m, String ex, Map<String, String> result) {
+
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast,lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		TryStatement trystate = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
 		Block tryblock = ast.newBlock();
@@ -596,32 +596,33 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean upgradeToMethod(AST ast, MethodDeclaration m,String ex,Map<String,String> result, String linenum) {
-		String lockname=result.get(ex); 
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+	private boolean upgradeToMethod(AST ast, MethodDeclaration m, String ex, Map<String, String> result,
+			String linenum) {
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
-		ExpressionStatement exstate2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate3 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		int line = 0;
 		int assign = 0;
 		char[] c = linenum.toCharArray();
-		if(c.length<m.getBody().statements().size()) {
-			int tmp=c.length;
-			while(tmp<m.getBody().statements().size()) {
+		if (c.length < m.getBody().statements().size()) {
+			int tmp = c.length;
+			while (tmp < m.getBody().statements().size()) {
 				tmp++;
 				assign++;
 			}
 		}
 		while (c[line] != 'W') {
-			if(c[line]=='A') {
+			if (c[line] == 'A') {
 				assign++;
 			}
 			line++;
 		}
-		
+
 		TryStatement trystate1 = ast.newTryStatement();
 		TryStatement trystate2 = ast.newTryStatement();
 		Block finalblock1 = ast.newBlock();
@@ -634,7 +635,6 @@ public class RWLockRefactoring extends Refactoring {
 			if (m.getBody().statements().size() == 0) {
 
 			} else {
-				//System.out.println("shu"+assign);
 				st1 = (Statement) m.getBody().statements().get(assign);
 				m.getBody().statements().remove(assign);
 				tryblock1.statements().add(st1);
@@ -679,7 +679,7 @@ public class RWLockRefactoring extends Refactoring {
 
 		}
 		if (body.statements().add(trystate2)) {
-			body.statements().add(assign+2, exstate);
+			body.statements().add(assign + 2, exstate);
 		}
 		m.setBody(body);
 		return true;
@@ -694,7 +694,7 @@ public class RWLockRefactoring extends Refactoring {
 		ExpressionStatement write_unlock = exp(ast, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		ExpressionStatement read_unlock2 = exp(ast, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		ExpressionStatement read_lock2 = exp(ast, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement get_write=exp(ast, "rwLock", "isWriteLockedByCurrentThread");
+		ExpressionStatement get_write = exp(ast, "rwLock", "isWriteLockedByCurrentThread");
 		TryStatement trystate = ast.newTryStatement();
 		TryStatement trystate1 = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
@@ -746,18 +746,15 @@ public class RWLockRefactoring extends Refactoring {
 			body1.statements().add(tlist.get(i));
 		}
 		/**
-		 * if(rwLock.isWriteLockedByCurrentThread()) {
-				writelock.unlock();
-			}else {
-				readlock.unlock();
-			}   
+		 * if(rwLock.isWriteLockedByCurrentThread()) { writelock.unlock(); }else {
+		 * readlock.unlock(); }
 		 */
 		IfStatement ifstate1 = ast.newIfStatement();
 		Block ifbody2 = ast.newBlock();
 		Block elsebody2 = ast.newBlock();
-		Expression ep=get_write.getExpression();
+		Expression ep = get_write.getExpression();
 		get_write.setExpression(ast.newCastExpression());
-		
+
 		ifstate1.setExpression(ep);
 		ifbody2.statements().add(write_unlock);
 		ifstate1.setThenStatement(ifbody2);
@@ -771,29 +768,26 @@ public class RWLockRefactoring extends Refactoring {
 			body.statements().add(0, read_lock1);
 			m.setBody(body);
 		}
-		
+
 	}
-	
-	
-	
-	
+
 	@SuppressWarnings("unchecked")
-	private boolean downgradeToMethod2(AST ast, MethodDeclaration m, String ex,Map<String,String> result,String linenum) {
+	private boolean downgradeToMethod2(AST ast, MethodDeclaration m, String ex, Map<String, String> result,
+			String linenum) {
 
-		String lockname=result.get(ex); 
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
-		ExpressionStatement exstate2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate3 = exp(ast,lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		int line = 0;
 		char[] c = linenum.toCharArray();
 		while (c[line] != 'R') {
 			line++;
 		}
-		//System.out.println(linenum);
 		TryStatement trystate1 = ast.newTryStatement();
 		TryStatement trystate2 = ast.newTryStatement();
 		Block finalblock1 = ast.newBlock();
@@ -802,9 +796,7 @@ public class RWLockRefactoring extends Refactoring {
 		Block tryblock2 = ast.newBlock();
 		Block body = ast.newBlock();
 		Statement st1 = null, st2 = null;
-		//System.out.println(m.getName() + ">>" + m.getBody().statements().size());
 		for (int a = 0; a < line; a++) {
-			//System.out.println("a+" + a);
 			if (m.getBody().statements().size() == 0) {
 
 			} else {
@@ -845,14 +837,14 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void writelockToBlock(AST ast, MethodDeclaration m,int b,String ex,Map<String,String> result) {
-		
-		String lock=result.get(ex); 
-		
+	private void writelockToBlock(AST ast, MethodDeclaration m, int b, String ex, Map<String, String> result) {
+
+		String lock = result.get(ex);
+
 		// 加锁
-		ExpressionStatement exstate = exp(ast,lock, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate = exp(ast, lock, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast,lock, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lock, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		Block tmp = ast.newBlock();
 
 		tmp = ((SynchronizedStatement) m.getBody().statements().get(b)).getBody();
@@ -870,8 +862,6 @@ public class RWLockRefactoring extends Refactoring {
 
 	}
 
-
-
 	/**
 	 * 锁降级模式1
 	 * 
@@ -880,16 +870,16 @@ public class RWLockRefactoring extends Refactoring {
 	 */
 
 	@SuppressWarnings("unchecked")
-	private void downgradeToMethod(AST ast, MethodDeclaration m,String lex,Map<String,String> result) {
-		String lockname=result.get(lex); 
+	private void downgradeToMethod(AST ast, MethodDeclaration m, String lex, Map<String, String> result) {
+		String lockname = result.get(lex);
 		/**
 		 * exstate 读锁加锁 exstate1 读锁释放 exstate3 写锁加锁 exstate4 写锁释放
 		 */
-		ExpressionStatement read_lock1 = exp(ast,lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement read_lock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		ExpressionStatement read_unlock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement write_lock = exp(ast,lockname,  LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement write_lock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		ExpressionStatement write_unlock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement read_unlock2 = exp(ast,lockname,  LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement read_unlock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		ExpressionStatement read_lock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 
 		TryStatement trystate = ast.newTryStatement();
@@ -898,8 +888,6 @@ public class RWLockRefactoring extends Refactoring {
 		Block finalblock1 = ast.newBlock();
 		Block body = ast.newBlock();
 
-		
-		
 		List<Statement> list = new ArrayList<Statement>();
 		for (int j = 0; j < m.getBody().statements().size(); j++) {
 			list.add((Statement) m.getBody().statements().get(j));
@@ -924,17 +912,17 @@ public class RWLockRefactoring extends Refactoring {
 				iftmp.delete();
 				Statement tmp = iftmp.getThenStatement();
 				Expression ex = iftmp.getExpression();
-				 //Name n=ast.newName("flag");
-				//Expression ex3=;
+				// Name n=ast.newName("flag");
+				// Expression ex3=;
 				ex.getParent().delete();
-				
-				
+
 				// 把父节点置空
 				iftmp.setThenStatement(ast.newAssertStatement());
-				
+
 				iftmp.setExpression(ast.newCastExpression());
-				//ExpressionStatement ex1 = ast.newExpressionStatement(ex);
-				//ExpressionStatement ex3=ast.newExpressionStatement(ast.newSimpleName(s.toString()));
+				// ExpressionStatement ex1 = ast.newExpressionStatement(ex);
+				// ExpressionStatement
+				// ex3=ast.newExpressionStatement(ast.newSimpleName(s.toString()));
 				// 内层的try finally
 				if (ifbody.statements().add(tmp)) {
 
@@ -943,16 +931,17 @@ public class RWLockRefactoring extends Refactoring {
 					trystate1.setBody(ifbody);
 					trystate1.setFinally(finalblock1);
 					ifbody1.statements().add(trystate1);
-					ASTNode ifCondition = rewrite.createStringPlaceholder(ex.toString(), ASTNode.CONDITIONAL_EXPRESSION);
-					ifstate.setExpression((Expression)ifCondition);
-					//ExpressionStatement ex1 = ast.newExpressionStatement(ex);
+					ASTNode ifCondition = rewrite.createStringPlaceholder(ex.toString(),
+							ASTNode.CONDITIONAL_EXPRESSION);
+					ifstate.setExpression((Expression) ifCondition);
+					// ExpressionStatement ex1 = ast.newExpressionStatement(ex);
 					ifstate.setThenStatement(ifbody1);
-					//ifbody1.statements().add(0, read_unlock1);
-					//ifbody1.statements().add(1, write_lock);
+					// ifbody1.statements().add(0, read_unlock1);
+					// ifbody1.statements().add(1, write_lock);
 					ifbody2.statements().add(ifstate);
 					ifbody2.statements().add(0, read_unlock1);
 					ifbody2.statements().add(1, write_lock);
-					
+
 					ifstate2.setExpression(ex);
 					ifstate2.setThenStatement(ifbody2);
 					tlist.add(ifstate2);
@@ -961,16 +950,15 @@ public class RWLockRefactoring extends Refactoring {
 
 		}
 		m.setBody(null);
-		for (int i =1; i < tlist.size(); i++) {
-			//System.out.println(tlist.get(i));
+		for (int i = 1; i < tlist.size(); i++) {
 //			if(tlist.get(i) instanceof IfStatement) {
 //				System.out.println("i="+i);
 //				System.out.println("s"+tlist.size()); 
 //				for(int t=i+1;t<tlist.size();t++) {
-					body1.statements().add(tlist.get(i));
-				//}
-			//}
-			
+			body1.statements().add(tlist.get(i));
+			// }
+			// }
+
 		}
 
 		// 最外层try finally
@@ -980,22 +968,22 @@ public class RWLockRefactoring extends Refactoring {
 		if (body.statements().add(trystate)) {
 			body.statements().add(0, read_lock1);
 			m.setBody(body);
-			m.getBody().statements().add(1,tlist.get(0));
+			m.getBody().statements().add(1, tlist.get(0));
 		}
 
 	}
 
 	@SuppressWarnings("unchecked")
-	private void downgradeToBlock(AST ast, MethodDeclaration m,int bl,String lex,Map<String,String> result) {
-		
-		String lockname=result.get(lex); 
-		
-		ExpressionStatement read_lock1 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement read_unlock1 = exp(ast,lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement write_lock = exp(ast,lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement write_unlock = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement read_unlock2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement read_lock2 = exp(ast,lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+	private void downgradeToBlock(AST ast, MethodDeclaration m, int bl, String lex, Map<String, String> result) {
+
+		String lockname = result.get(lex);
+
+		ExpressionStatement read_lock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement read_unlock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement write_lock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement write_unlock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement read_unlock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement read_lock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 
 		Block tmp = ast.newBlock();
 
@@ -1071,17 +1059,17 @@ public class RWLockRefactoring extends Refactoring {
 
 	}
 
-	private void downgradeToBlock2(AST ast, MethodDeclaration m,int bl, String ex,Map<String,String> result,String linenum) {
+	private void downgradeToBlock2(AST ast, MethodDeclaration m, int bl, String ex, Map<String, String> result,
+			String linenum) {
 
-		
-		String lockname=result.get(ex); 
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
-		ExpressionStatement exstate2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate3 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		Block tmp = ast.newBlock();
 
@@ -1102,16 +1090,17 @@ public class RWLockRefactoring extends Refactoring {
 		toBlock(ast, m, line, bl, tmp, exstate2, exstate3, exstate, exstate1);
 	}
 
-	private void upgradeToBlock(AST ast, MethodDeclaration m, int bl, String ex,Map<String,String> result,String linenum) {
-		String lockname=result.get(ex); 
-		
-		ExpressionStatement exstate = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
-		ExpressionStatement exstate1 = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+	private void upgradeToBlock(AST ast, MethodDeclaration m, int bl, String ex, Map<String, String> result,
+			String linenum) {
+		String lockname = result.get(ex);
 
-		ExpressionStatement exstate2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
-		ExpressionStatement exstate3 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+
+		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		// 释放锁
+		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		Block tmp = ast.newBlock();
 
@@ -1141,7 +1130,7 @@ public class RWLockRefactoring extends Refactoring {
 		Block finalblock2 = ast.newBlock();
 		Block tryblock1 = ast.newBlock();
 		Block tryblock2 = ast.newBlock();
-		//Block body = ast.newBlock();
+		// Block body = ast.newBlock();
 		Statement st1 = null, st2 = null;
 		for (int a = 0; a < line; a++) {
 			st1 = (Statement) tmp.statements().get(0);
@@ -1167,101 +1156,94 @@ public class RWLockRefactoring extends Refactoring {
 		m.getBody().statements().add(bl + 2, trystate2);
 		m.getBody().statements().add(bl + 2, exstate);
 	}
-	
-	private void decalock(AST ast, TypeDeclaration types,LockSet ls,List<String> list,Map<String,String> result) {
+
+	private void decalock(AST ast, TypeDeclaration types, LockSet ls, List<String> list, Map<String, String> result) {
 		ls.stLock();
 		ls.inLock();
-		Map<IField,String> slockmap=ls.getsmap();
-		Map<IField,String> lockmap=ls.getmap();
-		if(ls.staticmap().size()!=0&&!list.contains("stlock")) {
-			addlock(ast,types,ls.staticmap().get("static"),true);
-			result.put("static",ls.staticmap().get("static"));
+		Map<IField, String> slockmap = ls.getsmap();
+		Map<IField, String> lockmap = ls.getmap();
+		if (ls.staticmap().size() != 0 && !list.contains("stlock")) {
+			addlock(ast, types, ls.staticmap().get("static"), true);
+			result.put("static", ls.staticmap().get("static"));
 			list.add(ls.staticmap().get("static"));
 		}
-		if(ls.thismap().size()!=0&&!list.contains("tlock")){
-			addlock(ast,types,ls.thismap().get("this"),false);
-			result.put("this",ls.thismap().get("this"));
+		if (ls.thismap().size() != 0 && !list.contains("tlock")) {
+			addlock(ast, types, ls.thismap().get("this"), false);
+			result.put("this", ls.thismap().get("this"));
 			list.add(ls.thismap().get("this"));
 		}
-		System.out.println("shit"+list);
-		for(IField key : slockmap.keySet()){
-			if(!list.contains(slockmap.get(key))) {
-				addlock(ast,types,slockmap.get(key),true);
-				result.put(key.getName().toString(),slockmap.get(key));
+		for (IField key : slockmap.keySet()) {
+			if (!list.contains(slockmap.get(key))) {
+				addlock(ast, types, slockmap.get(key), true);
 				list.add(slockmap.get(key));
 			}
+			result.put(key.getName().toString(), slockmap.get(key));
 		}
-		for(IField key : lockmap.keySet()){
-			if(!list.contains(lockmap.get(key))) {
-				addlock(ast,types,lockmap.get(key),false);
-				result.put(key.getName().toString(),lockmap.get(key));
+		for (IField key : lockmap.keySet()) {
+			if (!list.contains(lockmap.get(key))) {
+				addlock(ast, types, lockmap.get(key), false);
 				list.add(lockmap.get(key));
 			}
+			result.put(key.getName().toString(), lockmap.get(key));
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private void addlock(AST ast, TypeDeclaration types,String lockname,boolean flag) {
+	private void addlock(AST ast, TypeDeclaration types, String lockname, boolean flag) {
 		VariableDeclarationFragment lock = ast.newVariableDeclarationFragment();
 		lock.setName(ast.newSimpleName(lockname));
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
 		creation.setType(ast.newSimpleType(ast.newSimpleName("ReentrantReadWriteLock")));
 		lock.setInitializer(creation);
-		
+
 		FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(lock);
 		fieldDeclaration.setType(ast.newSimpleType(ast.newName("ReentrantReadWriteLock")));
-		aadfieldModifiers(fieldDeclaration, ast,flag);
-		
+		aadfieldModifiers(fieldDeclaration, ast, flag);
+
 		types.bodyDeclarations().add(0, fieldDeclaration);
 	}
-
 	
-	private void getlockex(List<String> lockex,Map<MethodDeclaration,String> inmap,TypeDeclaration types){
-		MethodDeclaration[] ms=types.getMethods();
-		for(MethodDeclaration m:ms) {
-			if(m.modifiers().size()==0) {
-				lockex.add("this");
-				inmap.put(m,"this");
-			}
+	
+	/**
+	  *   获取当前类下所有锁句柄
+	 * @param lockex 用来存储锁句柄
+	 * @param inmap  用来存储方法类型的映射关系
+	 * @param types  当前类
+	 */
+	private void getlockex(List<String> lockex, Map<MethodDeclaration, String> inmap, TypeDeclaration types) {
+		MethodDeclaration[] ms = types.getMethods();
+		// 遍历当前类的所有方法
+		for (MethodDeclaration m : ms) {
+			// 遍历修饰符
 			for (int i = 0; i < m.modifiers().size(); i++) {
-				//获取同步方法的锁
+				// 获取同步方法的锁
 				if (m.modifiers().get(i).toString().equals("synchronized")) {
-					if(i!=0) {
-					for(int j=0;j<i;j++) {
-						if(m.modifiers().get(j).toString().equals("static")) {
-							lockex.add("static");
-							inmap.put(m,"static");
-						}else if(j+1==i) {
-							lockex.add("this");
-							inmap.put(m,"this");
-								}
+					// 判断是否是静态方法，static和synchronized的前后位置
+						for (int j = 0; j < m.modifiers().size(); j++) {
+							if (m.modifiers().get(j).toString().equals("static")) {
+								lockex.add("static");
+								inmap.put(m, "static");
+								break;
+							} else if (j + 1 == m.modifiers().size()) {
+								lockex.add("this");
+								inmap.put(m, "this");
 							}
 						}
-					else {
-						for(int j=0;j< m.modifiers().size();j++) {
-							if(m.modifiers().get(j).toString().equals("static")) {
-								lockex.add("static");
-								inmap.put(m,"static");
-							}else if(j+1==m.modifiers().size()) {
-								lockex.add("this");
-								inmap.put(m,"this");
-									}
-							}
-					}
-				
-				}else if(i+1==m.modifiers().size()) {
-					//获取同步块的锁
+
+				} else if (i + 1 == m.modifiers().size()) {
+					// 获取同步块的锁
 					for (int b = 0; b < m.getBody().statements().size(); b++) {
 						if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
-							
-							lockex.add(((SynchronizedStatement)m.getBody().statements().get(b)).getExpression().toString());
+							//获取锁句柄
+							lockex.add(((SynchronizedStatement) m.getBody().statements().get(b)).getExpression()
+									.toString());
 						}
 					}
 				}
 			}
-		
+
 		}
-		}
+	}
 
 	private void print_num() {
 		System.out.println("同步方法:" + sy_num + "  " + "锁升级:" + sy_up_num + "  " + "锁降级:" + sy_down_num + "  " + "读锁:"

@@ -21,7 +21,7 @@ public class AliasAnalysis {
 	public boolean mayAlias(PointerKey pk1, PointerKey pk2) {
 		if(pk1 == null || pk2 == null)
 			return false;
-		OrdinalSet<InstanceKey> ptsTo1 = pa.getPointsToSet(pk1);
+		OrdinalSet<InstanceKey> ptsTo1 = pa.getPointsToSet(pk1); 
 		OrdinalSet<InstanceKey> ptsTo2 = pa.getPointsToSet(pk2);
 		for (InstanceKey i : ptsTo1) {
 			for (InstanceKey j : ptsTo2) {

@@ -19,8 +19,6 @@ public class DFA {
 	}
 
 	public boolean makedfa() {
-		
-		
 		int num=0;
 		char[] inputChars=inputChar.toCharArray();
 		char[] charracters =charracter.toCharArray();

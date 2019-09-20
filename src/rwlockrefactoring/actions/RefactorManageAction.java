@@ -57,21 +57,19 @@ public class RefactorManageAction implements IWorkbenchWindowActionDelegate {
 	 * changed as user selected
 	 */
 	@Override
-	// selection�м�¼���û�ѡ�񲿷֡������ж�ѡ��Ĳ�����Ŀ�Ƿ�Ψһ��Ȼ���ж����Ψһ��ѡ�񲿷��ǲ���Javaģ��Ԫ��
+	// selection中记录了用户选择部分。首先判断选择的部分数目是否唯一，然后判断这个唯一的选择部分是不是Java模型元素
 	public void selectionChanged(IAction action, ISelection selection) {
 		if (selection.isEmpty())
 			select = null;
-		else if (selection instanceof IStructuredSelection) {	
+		else if (selection instanceof IStructuredSelection) {
 			IStructuredSelection strut = ((IStructuredSelection) selection);
 			if (strut.size() != 1)
 				select = null;
-			if(strut.getFirstElement() instanceof IPackageFragment) {
+			if (strut.getFirstElement() instanceof IPackageFragment) {
 				select = (IPackageFragment) strut.getFirstElement();
-			}else
-			if(strut.getFirstElement() instanceof ICompilationUnit) {
+			} else if (strut.getFirstElement() instanceof ICompilationUnit) {
 				select = (ICompilationUnit) strut.getFirstElement();
-			}else
-			if (strut.getFirstElement() instanceof IJavaElement)
+			} else if (strut.getFirstElement() instanceof IJavaElement)
 				select = (IJavaElement) strut.getFirstElement();
 		} else
 			select = null;

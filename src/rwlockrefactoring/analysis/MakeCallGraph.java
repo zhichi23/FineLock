@@ -19,6 +19,7 @@ import com.ibm.wala.ipa.callgraph.CallGraphBuilder;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions.ReflectionOptions;
+import com.ibm.wala.ipa.callgraph.impl.AllApplicationEntrypoints;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.callgraph.propagation.InstanceKey;
 import com.ibm.wala.ipa.callgraph.propagation.PointerAnalysis;
@@ -77,8 +78,8 @@ public class MakeCallGraph {
 		cha = ClassHierarchyFactory.make(scope);
 
 		Iterable<Entrypoint> entrypoints = null;
-
-		entrypoints = Util.makeMainEntrypoints(scope, cha);
+		entrypoints=Util.makeMainEntrypoints(scope, cha);
+		//entrypoints = new AllApplicationEntrypoints(scope, cha);
 
 		AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
 

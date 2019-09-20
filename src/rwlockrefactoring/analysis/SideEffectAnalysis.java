@@ -208,8 +208,9 @@ public class SideEffectAnalysis {
 		int line = 0;
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
-			if (n.getMethod().getName().toString().equals(method)
-					&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
+			if (n.getMethod().getName().toString().equals(method)) {
+				
+					//&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 
 				if (ir == null||ir.getMethod() instanceof SummarizedMethod) {
@@ -217,7 +218,6 @@ public class SideEffectAnalysis {
 				}
 				IBytecodeMethod bytemethod = (IBytecodeMethod) ir.getMethod();
 				Iterator<SSAInstruction> instruction = ir.iterateAllInstructions();
-
 				// 遍历方法中的所有指令
 				while (instruction.hasNext()) {
 					SSAInstruction ins = instruction.next();
@@ -490,9 +490,10 @@ public class SideEffectAnalysis {
 		return writlist;
 	}
 
-
+	//C是if语句，E是其他条件语句
 	public String getsToMethod() {
 		StringBuffer sb = new StringBuffer();
+		
 		for (int s : map.keySet()) {
 			if (map.get(s).contains("C")) {
 				if (map.get(s).contains("G")) {
@@ -518,9 +519,8 @@ public class SideEffectAnalysis {
 			}
 
 		}
-		if (sb.length() == 0) {
-
-		} else {
+		if (sb.length() != 0) {
+			//删除方法最后的return
 			sb.deleteCharAt(sb.length() - 1);
 		}
 
@@ -528,6 +528,7 @@ public class SideEffectAnalysis {
 	}
 
 	public String getsToBlock() {
+		System.out.println(map);
 		StringBuffer sb = new StringBuffer();
 		for (int s : map.keySet()) {
 			if (map.get(s).contains("M")) {
@@ -568,7 +569,11 @@ public class SideEffectAnalysis {
 			}
 
 		}
-		sb.deleteCharAt(sb.length() - 1);
+		
+		if (sb.length() != 0) {
+			//删除方法最后的return
+			sb.deleteCharAt(sb.length() - 1);
+		}
 		return sb.toString();
 	}
 
@@ -582,7 +587,6 @@ public class SideEffectAnalysis {
 				while (i < c.length && c[i] != 'T') {
 					tmp.add(c[i]);
 					i++;
-
 				}
 				if (tmp.contains('W')) {
 					sb.append("W");
@@ -610,7 +614,7 @@ public class SideEffectAnalysis {
 			if (c[i] == 'M') {
 				sb.append("M");
 			} else if (c[i] == 'C' || c[i] == 'E') {
-				while (c[++i] != 'T') {
+				while (i+1<c.length&&c[++i] != 'T') {
 					tmp.add(c[i]);
 				}
 				if (tmp.contains('W')) {
@@ -629,11 +633,11 @@ public class SideEffectAnalysis {
 		int y = 0;
 		int bindex = 0;
 		int aindex = 0;
-		while (c[t - 1] != 'M') {
+		while (t-1>=0&&c[t - 1] != 'M') {
 			t--;
 			aindex++;
 		}
-		while (c[y] != 'M') {
+		while (y<c.length&&c.length!=0&&c[y] != 'M') {
 			y++;
 			bindex++;
 		}
@@ -641,7 +645,10 @@ public class SideEffectAnalysis {
 			sb.deleteCharAt(sb.length() - 1);
 		}
 		for (int i = 0; i < bindex; i++) {
-			sb.deleteCharAt(0);
+			if(sb.length()!=0) {
+				sb.deleteCharAt(0);
+			}
+			
 		}
 		return sb.toString();
 

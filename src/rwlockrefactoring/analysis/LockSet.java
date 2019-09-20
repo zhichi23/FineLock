@@ -85,7 +85,6 @@ public class LockSet {
 
 	@Deprecated
 	public void getpointer() {
-
 		Collection<InstanceKey> co = pointer.getInstanceKeys();
 		Iterator<InstanceKey> io = co.iterator();
 		Iterator<IClass> ic = cha.iterator();
@@ -117,6 +116,11 @@ public class LockSet {
 			}
 
 		}
+	}
+	
+	public void makelock() {
+		inLock();
+		stLock();
 	}
 
 	public void stLock() {
@@ -184,7 +188,6 @@ public class LockSet {
 					for (int j = i + 1; j < k; j++) {
 						ppp = hm.getPointerKeyForInstanceField(tmp.get(fields[j]), fields[j]);
 						if (alias.mayAlias(pp, ppp)) {
-							System.out.println("bieming1");
 							ins_field_map.put(fields[j], ins_field_map.get(fields[i]));
 						} else {
 							ins_field_map.put(fields[j], "ilock" + j);

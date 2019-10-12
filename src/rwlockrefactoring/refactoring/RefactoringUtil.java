@@ -93,7 +93,7 @@ public class RefactoringUtil {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private void addlock(AST ast, TypeDeclaration types, String lockname, boolean flag) {
+	public void addlock(AST ast, TypeDeclaration types, String lockname, boolean flag) {
 		VariableDeclarationFragment lock = ast.newVariableDeclarationFragment();
 		lock.setName(ast.newSimpleName(lockname));
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();

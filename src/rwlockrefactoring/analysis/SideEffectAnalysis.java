@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.ibm.wala.classLoader.IBytecodeMethod;
 import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
@@ -40,6 +41,7 @@ import com.ibm.wala.ssa.SSAPhiInstruction;
 import com.ibm.wala.ssa.SSAPiInstruction;
 import com.ibm.wala.ssa.SSAPutInstruction;
 import com.ibm.wala.ssa.SSAReturnInstruction;
+import com.ibm.wala.types.MethodReference;
 
 import rwlockrefactoring.util.RWSign;
 import rwlockrefactoring.util.RWString;
@@ -208,9 +210,8 @@ public class SideEffectAnalysis {
 		int line = 0;
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
-			if (n.getMethod().getName().toString().equals(method)) {
-				
-					//&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
+			if (n.getMethod().getName().toString().equals(method) 
+			&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 
 				if (ir == null||ir.getMethod() instanceof SummarizedMethod) {
@@ -245,7 +246,18 @@ public class SideEffectAnalysis {
 					map.put(linenum.get(set.next()), list);
 				}
 				while (l < instructions.size()) {
-					sb.append(geteffect(instructions.get(l), n, bytemethod));
+					if (instructions.get(l) instanceof SSAInvokeInstruction
+							&&!((SSAInvokeInstruction)instructions.get(l)).isSpecial()) {
+						SSAInvokeInstruction ssai=((SSAInvokeInstruction)instructions.get(l));
+							if (ssai.getCallSite().getDeclaredTarget().getName().toString().equals("wait")
+									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notify")
+									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notifyAll"))
+								return "condi";
+					}
+					l++;
+				}
+				while (l < instructions.size()) {
+						sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
 				return sb.toString();
 			}
@@ -264,6 +276,7 @@ public class SideEffectAnalysis {
 		StringBuffer sb = new StringBuffer();
 		if (ins instanceof SSAInvokeInstruction) {
 			SSAInvokeInstruction ssai = (SSAInvokeInstruction) ins;
+			
 			if (ssai.getCallSite().getDeclaredTarget().getDeclaringClass().getName().getPackage().toString()
 					.equals("java/util")) {
 				if (analysisPrimordial(ssai.getDeclaredTarget().getName().toString(), n)) {

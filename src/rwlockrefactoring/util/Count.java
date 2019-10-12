@@ -8,6 +8,9 @@ public class Count {
 	public int sy_down_num = 0;
 	public int sy_read_num = 0;
 	public int sy_write_num = 0;
+	
+	public int sy_can_not1=0;
+	public int sy_can_not2=0;
 	//统计同步块
 	public int bl_num = 0;
 	public int bl_up_num = 0;

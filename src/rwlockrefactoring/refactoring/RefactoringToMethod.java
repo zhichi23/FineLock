@@ -12,6 +12,7 @@ import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TryStatement;
 
@@ -68,8 +69,8 @@ public class RefactoringToMethod implements LockRefactoring{
 				iftmp.delete();
 				Statement tmp = iftmp.getThenStatement();
 				Expression ex = iftmp.getExpression();
-				// Name n=ast.newName("flag");
-				// Expression ex3=;
+				Name n=ast.newName("flag");
+				//Expression ex3=n.expre;
 				ex.getParent().delete();
 
 				// 把父节点置空
@@ -90,7 +91,7 @@ public class RefactoringToMethod implements LockRefactoring{
 					//TODO 待解决
 					//ASTNode ifCondition = rewrite.createStringPlaceholder(ex.toString(),
 					//		ASTNode.CONDITIONAL_EXPRESSION);
-					//ifstate.setExpression((Expression) ifCondition);
+					ifstate.setExpression((Expression) n);
 					// ExpressionStatement ex1 = ast.newExpressionStatement(ex);
 					ifstate.setThenStatement(ifbody1);
 					// ifbody1.statements().add(0, read_unlock1);

@@ -36,6 +36,7 @@ import org.eclipse.ltk.core.refactoring.TextFileChange;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.TextEdit;
 
+import com.ibm.wala.ipa.callgraph.CGNode;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.cha.ClassHierarchyException;
@@ -265,6 +266,9 @@ public class RWLockRefactoring extends Refactoring {
 			// List<MethodDeclaration> methods = new ArrayList<MethodDeclaration>();
 			List<TypeDeclaration> types = new ArrayList<TypeDeclaration>();
 			// getMethods(astRoot.getRoot(), methods);
+//			for(CGNode g:callgraph) {
+//				System.out.println(g);
+//			}
 			getTypes(astRoot.getRoot(), types);
 			for (TypeDeclaration ty : types) {
 				countmap.put(ty.getName().toString(), 0);
@@ -325,19 +329,27 @@ public class RWLockRefactoring extends Refactoring {
 		MethodDeclaration[] ms = types.getMethods();
 		List<String> tmp = new LinkedList<String>();
 		Map<String, String> result = new HashMap<String, String>();
-		 
+		 int zanshi=0;
 		LockRefactoring lf;
 		if (synMethod) {
 			rutil.decalock(ast, types, ls, tmp, result);
 			for (MethodDeclaration m : ms) {
 				for (int i = 0; i < m.modifiers().size(); i++) {
 					if (m.modifiers().get(i).toString().equals("synchronized")) {
+						if(m.getBody().statements().size()==0) {
+							count.sy_can_not1++;
+							break;
+						}
 						lf=new RefactoringToMethod(result);
 						count.sy_num++;
 						SideEffectAnalysis sda1 = new SideEffectAnalysis(callgraph);
 						countmap.put(types.getName().toString(), countmap.get(types.getName().toString()) + 1);
 						String rws = sda1.sideEffect(m.getName().toString(), types.getName().toString(),
 								m.parameters());
+						if(rws=="condi") {
+							count.sy_can_not2++;
+							break;
+						}
 						String rws1 = sda1.getsToMethod();
 						String rws2 = sda1.makeReToMethod();
 						MethodString mstring=new MethodString(rws1, rws2);
@@ -348,12 +360,21 @@ public class RWLockRefactoring extends Refactoring {
 						rutil.addImport(root.imports(), id1);
 						rutil.addImport(root.imports(), id2);
 						m.modifiers().remove(i);
+//						if(m.getName().toString().equals("testWrite")) {
+//							lf.refactoring_write(ast, m, inmap.get(m));
+//						}else {
+//							lf.refactoring_down(ast, m, inmap.get(m));
+//						}
 						
-						if (rws1 == null || rws == null||rws1.length()==0) {
+						if (rws==null||rws1.length()==0) {
+							if(zanshi==0) {rutil.addlock(ast,types,"nulock",true);}
+							zanshi++;
 							lf.refactoring_null(ast, m);
 							//writelockToMethod(ast, m, inmap.get(m), result);
+							//count.sy_can_not1++;
 							count.sy_write_num++;
-						} else { 
+						}
+						else { 
 							String s=mstring.match();
 							if (s=="D") {
 							lf.refactoring_down(ast, m, inmap.get(m));
@@ -371,6 +392,7 @@ public class RWLockRefactoring extends Refactoring {
 							lf.refactoring_read(ast, m, inmap.get(m));
 							count.sy_read_num++;
 						} else {
+							
 							lf.refactoring_write(ast, m, inmap.get(m));
 							count.sy_write_num++;
 
@@ -399,12 +421,16 @@ public class RWLockRefactoring extends Refactoring {
 						SideEffectAnalysis sda2 = new SideEffectAnalysis(callgraph);
 						String rws = sda2.sideEffect(m.getName().toString(), types.getName().toString(),
 								m.parameters());
+						if(rws=="condi") {
+							count.sy_can_not2++;
+							break;
+						}
 						String rws1 = sda2.getsToBlock();
 						String rws2 = sda2.makeReToBlock();
 						rutil.addImport(root.imports(), id1);
 						rutil.addImport(root.imports(), id2);
 						BlockString bstring=new BlockString(rws1,rws2);
-						if (rws2 == null||rws==null||rws1.length()==0) {
+						if (rws1.length()==0||rws==null) {
 							//writelockToBlock(ast, m, b, tolock, result);
 							lf.refactoring_null(ast, m);
 							count.bl_write_num++;
@@ -414,17 +440,23 @@ public class RWLockRefactoring extends Refactoring {
 							lf.refactoring_down(ast, m, inmap.get(m));
 							count.bl_down_num++;
 						} else if(s=="DS") {
-							lf.refactoring_downs(ast, m, inmap.get(m),rws2);
+							lf.refactoring_null(ast, m);
+							//lf.refactoring_downs(ast, m, inmap.get(m),rws2);
 						}else if (s=="U") {
-							lf.refactoring_up(ast, m, inmap.get(m));
+							lf.refactoring_null(ast, m);
+							//lf.refactoring_up(ast, m, inmap.get(m));
 							count.bl_up_num++;
 						} else if(s=="US") {
-							lf.refactoring_ups(ast, m, inmap.get(m),rws2);
+							lf.refactoring_null(ast, m);
+							//lf.refactoring_ups(ast, m, inmap.get(m),rws2);
 						}else if (!rws2.contains(RWSign.WRITE_SIGN)) {
-							lf.refactoring_read(ast, m, inmap.get(m));
+							lf.refactoring_null(ast, m);
+							//lf.refactoring_read(ast, m, inmap.get(m));
 							count.bl_read_num++;
 						} else {
-							lf.refactoring_write(ast, m, inmap.get(m));
+							//System.out.println(types.getName().toString()+"  "+m.getName());
+							lf.refactoring_null(ast, m);
+							//lf.refactoring_write(ast, m, inmap.get(m));
 							count.bl_write_num++;
 						}}
 					}

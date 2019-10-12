@@ -18,6 +18,7 @@ public interface LockRefactoring {
 	//加写锁
 	public boolean refactoring_write(AST ast, MethodDeclaration m, String ex);
 	
+	//不能生成读写串的方法
 	public void refactoring_null(AST ast, MethodDeclaration m);
 
 	//加锁

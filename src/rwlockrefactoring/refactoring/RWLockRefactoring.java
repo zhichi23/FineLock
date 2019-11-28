@@ -84,8 +84,8 @@ public class RWLockRefactoring extends Refactoring {
 	boolean synMethod = false;
 	boolean synBlock = false;
 
-	Count count=new Count();
-	MessageBox mb=new MessageBox();
+	Count count = new Count();
+	MessageBox mb = new MessageBox();
 
 	Map<String, Integer> countmap = new HashMap<String, Integer>();
 
@@ -120,7 +120,7 @@ public class RWLockRefactoring extends Refactoring {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		if (changeManager.size() == 0)
 			return RefactoringStatus.createFatalErrorStatus("No synchronized methods/blocks found!");
 		else
@@ -134,7 +134,7 @@ public class RWLockRefactoring extends Refactoring {
 	@Override
 	public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
 			throws CoreException, OperationCanceledException {
-		// has no initial　condition
+		// has no initial condition
 		return RefactoringStatus.createInfoStatus("Initial Condition is OK!");
 	}
 
@@ -158,10 +158,11 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	/**
-	 * 待修改 
+	 * 待修改
+	 * 
 	 * @param project
 	 */
-	
+
 	private void findAllCompilationUnits(Object project) {
 		if (project instanceof ICompilationUnit) {
 			compilationUnits.add(((ICompilationUnit) project));
@@ -194,42 +195,42 @@ public class RWLockRefactoring extends Refactoring {
 //					}}
 //				}
 				IJavaElement element1 = (IJavaElement) project;
-				//if (element1.getElementName().equals("src")) {
-					
-					IPackageFragmentRoot root = (IPackageFragmentRoot) element1;
-					for (IJavaElement ele : root.getChildren()) {
-						if (ele instanceof IPackageFragment) {
-							IPackageFragment fragment = (IPackageFragment) ele;
-							// 遍历所有类
-							for (ICompilationUnit unit : fragment.getCompilationUnits()) {
-								compilationUnits.add(unit);
-							}
+				// if (element1.getElementName().equals("src")) {
+
+				IPackageFragmentRoot root = (IPackageFragmentRoot) element1;
+				for (IJavaElement ele : root.getChildren()) {
+					if (ele instanceof IPackageFragment) {
+						IPackageFragment fragment = (IPackageFragment) ele;
+						// 遍历所有类
+						for (ICompilationUnit unit : fragment.getCompilationUnits()) {
+							compilationUnits.add(unit);
 						}
 					}
+				}
 
 			} catch (JavaModelException e) {
 				e.printStackTrace();
 			}
-		}else {
+		} else {
 			try {
 				IJavaElement element1 = (IJavaElement) project;
-				//if (element1.getElementName().equals("src")) {
-					
-					IPackageFragmentRoot root = (IPackageFragmentRoot) element1;
-					for (IJavaElement ele : root.getChildren()) {
-						if (ele instanceof IPackageFragment) {
-							IPackageFragment fragment = (IPackageFragment) ele;
-							// 遍历所有类
-							for (ICompilationUnit unit : fragment.getCompilationUnits()) {
-								compilationUnits.add(unit);
-							}
+				// if (element1.getElementName().equals("src")) {
+
+				IPackageFragmentRoot root = (IPackageFragmentRoot) element1;
+				for (IJavaElement ele : root.getChildren()) {
+					if (ele instanceof IPackageFragment) {
+						IPackageFragment fragment = (IPackageFragment) ele;
+						// 遍历所有类
+						for (ICompilationUnit unit : fragment.getCompilationUnits()) {
+							compilationUnits.add(unit);
 						}
 					}
+				}
 
 			} catch (JavaModelException e) {
 				e.printStackTrace();
 			}
-			
+
 		}
 
 	}
@@ -249,7 +250,7 @@ public class RWLockRefactoring extends Refactoring {
 		// 构建调用图
 		callgraph = cg.callgraph();
 		for (IJavaElement element : compilationUnits) {
-
+			System.out.println(compilationUnits.size());
 			// 创建一个document(jface)
 			ICompilationUnit cu = (ICompilationUnit) element;
 			String source = cu.getSource();
@@ -310,93 +311,101 @@ public class RWLockRefactoring extends Refactoring {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean collectChanges(CompilationUnit root, TypeDeclaration types) throws IllegalArgumentException, CallGraphBuilderCancelException,
-			ClassHierarchyException, UnsupportedOperationException, IOException, InvalidClassFileException {
+	private boolean collectChanges(CompilationUnit root, TypeDeclaration types)
+			throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException,
+			UnsupportedOperationException, IOException, InvalidClassFileException {
 		AST ast = types.getAST();
 		ImportDeclaration id1 = ast.newImportDeclaration();
 		ImportDeclaration id2 = ast.newImportDeclaration();
 
 		id1.setName(ast.newName(new String[] { "java", "util", "concurrent", "locks", "ReentrantReadWriteLock" }));
 		id2.setName(ast.newName(new String[] { "java", "util", "concurrent", "locks", "Lock" }));
-		RefactoringUtil rutil=new RefactoringUtil();
+		RefactoringUtil rutil = new RefactoringUtil();
 		List<String> lockex = new LinkedList<String>();
 		Map<MethodDeclaration, String> inmap = new HashMap<MethodDeclaration, String>();
 		// 获取当前类的所有锁句柄
-		List<MethodDeclaration> absMethod=new ArrayList<MethodDeclaration>();
-		rutil.getlockex(lockex, inmap, types,absMethod);
+		List<MethodDeclaration> absMethod = new ArrayList<MethodDeclaration>();
+		rutil.getlockex(lockex, inmap, types, absMethod);
 		LockSet ls = new LockSet(cg.pointer(), cg.cha());
 		ls.lockmap(lockex, types.getName().toString());
 		MethodDeclaration[] ms = types.getMethods();
 		List<String> tmp = new LinkedList<String>();
 		Map<String, String> result = new HashMap<String, String>();
-		 int zanshi=0;
+		int zanshi = 0;
 		LockRefactoring lf;
 		if (synMethod) {
 			rutil.decalock(ast, types, ls, tmp, result);
+			//System.out.println(inmap);
 			for (MethodDeclaration m : ms) {
 				for (int i = 0; i < m.modifiers().size(); i++) {
 					if (m.modifiers().get(i).toString().equals("synchronized")) {
-						if(m.getBody().statements().size()==0) {
-							count.sy_can_not1++;
-							break;
-						}
-						lf=new RefactoringToMethod(result);
 						count.sy_num++;
+						// 统计空方法
+//						if(m.getBody().statements().size()==0) {
+//							count.sy_can_not1++;
+//							break;
+//						}
+						lf = new RefactoringToMethod(result);
+						// count.sy_num++;
 						SideEffectAnalysis sda1 = new SideEffectAnalysis(callgraph);
 						countmap.put(types.getName().toString(), countmap.get(types.getName().toString()) + 1);
 						String rws = sda1.sideEffect(m.getName().toString(), types.getName().toString(),
 								m.parameters());
-						if(rws=="condi") {
-							count.sy_can_not2++;
-							break;
-						}
+						// 统计信号量
+//						if(rws=="condi") {
+//							count.sy_can_not2++;
+//							break;
+//						}
+						
 						String rws1 = sda1.getsToMethod();
 						String rws2 = sda1.makeReToMethod();
-						MethodString mstring=new MethodString(rws1, rws2);
-						
-						//System.out.println("rws1"+rws1);
-						//System.out.println("rws2"+rws2);
+						System.out.println(m+":"+rws1);
+						System.out.println(m+":"+rws2);
+						MethodString mstring = new MethodString(rws1, rws2);
+
+						// System.out.println("rws1"+rws1);
+						// System.out.println("rws2"+rws2);
 						DFA down_dfa = new DFA(rws1);
 						rutil.addImport(root.imports(), id1);
 						rutil.addImport(root.imports(), id2);
 						m.modifiers().remove(i);
-//						if(m.getName().toString().equals("testWrite")) {
-//							lf.refactoring_write(ast, m, inmap.get(m));
-//						}else {
-//							lf.refactoring_down(ast, m, inmap.get(m));
-//						}
-						
-						if (rws==null||rws1.length()==0) {
-							if(zanshi==0) {rutil.addlock(ast,types,"nulock",true);}
+
+						if (rws == null || rws1.length() == 0) {
+							if (zanshi == 0) {
+								rutil.addlock(ast, types, "nulock", true);
+							}
 							zanshi++;
 							lf.refactoring_null(ast, m);
-							//writelockToMethod(ast, m, inmap.get(m), result);
-							//count.sy_can_not1++;
+							// writelockToMethod(ast, m, inmap.get(m), result);
+							// count.sy_can_not1++;
 							count.sy_write_num++;
-						}
-						else { 
-							String s=mstring.match();
-							if (s=="D") {
-							lf.refactoring_down(ast, m, inmap.get(m));
-							count.sy_down_num++;
-						} else if (s=="U") {
-							lf.refactoring_up(ast, m,inmap.get(m));
-							count.sy_up_num++;
-						} else if (s=="DS") {
-							lf.refactoring_downs(ast, m, inmap.get(m), rws2);
-							count.sy_down_num++;
-						}else if(s=="US") {
-							lf.refactoring_ups(ast, m,inmap.get(m),rws2);
-							count.sy_up_num++;
-						}else if (!rws1.contains(RWSign.WRITE_SIGN)) {
-							lf.refactoring_read(ast, m, inmap.get(m));
-							count.sy_read_num++;
 						} else {
-							
-							lf.refactoring_write(ast, m, inmap.get(m));
-							count.sy_write_num++;
+							String s = mstring.match();
+							if (s == "D") {
+								lf.refactoring_null(ast, m);
+								//lf.refactoring_down(ast, m, inmap.get(m));
+								count.sy_down_num++;
+							} else if (s == "U") {
+								lf.refactoring_null(ast, m);
+								//lf.refactoring_up(ast, m, inmap.get(m));
+								count.sy_up_num++;
+							} else if (s == "DS") {
+								lf.refactoring_null(ast, m);
+								//lf.refactoring_downs(ast, m, inmap.get(m), rws2);
+								count.sy_down_num++;
+							} else if (s == "US") {
+								lf.refactoring_null(ast, m);
+								//lf.refactoring_ups(ast, m, inmap.get(m), rws2);
+								count.sy_up_num++;
+							} else if (!rws1.contains(RWSign.WRITE_SIGN)&&rws1.contains(RWSign.READ_SIGN)) {
+								lf.refactoring_read(ast, m, inmap.get(m));
+								count.sy_read_num++;
+							} else {
+								lf.refactoring_write(ast, m, inmap.get(m));
+								count.sy_write_num++;
 
-						}}
+							}
+						}
 
 					}
 				}
@@ -404,71 +413,72 @@ public class RWLockRefactoring extends Refactoring {
 		}
 		if (synBlock) {
 			rutil.decalock(ast, types, ls, tmp, result);
-			if(!types.isInterface()) {
-			for (MethodDeclaration m : ms) {
-				if(!absMethod.contains(m)) {
-				for (int b = 0; b < m.getBody().statements().size(); b++) {
-					if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
-						lf=new RefactoringToBlock(result, b);
-						count.bl_num++;
-						SynchronizedStatement sst = (SynchronizedStatement) m.getBody().statements().get(b);
-						String tolock = null;
-						if (sst.getExpression().toString().equals("getClass()")) {
-							tolock = "static";
-						} else {
-							tolock = sst.getExpression().toString();
+			if (!types.isInterface()) {
+				for (MethodDeclaration m : ms) {
+					if (!absMethod.contains(m)) {
+						for (int b = 0; b < m.getBody().statements().size(); b++) {
+							if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
+								lf = new RefactoringToBlock(result, b);
+								count.bl_num++;
+								SynchronizedStatement sst = (SynchronizedStatement) m.getBody().statements().get(b);
+								String tolock = null;
+								if (sst.getExpression().toString().equals("getClass()")) {
+									tolock = "static";
+								} else {
+									tolock = sst.getExpression().toString();
+								}
+								SideEffectAnalysis sda2 = new SideEffectAnalysis(callgraph);
+								String rws = sda2.sideEffect(m.getName().toString(), types.getName().toString(),
+										m.parameters());
+//						if(rws=="condi") {
+//							count.sy_can_not2++;
+//							break;
+//						}
+								String rws1 = sda2.getsToBlock();
+								String rws2 = sda2.makeReToBlock();
+								rutil.addImport(root.imports(), id1);
+								rutil.addImport(root.imports(), id2);
+								BlockString bstring = new BlockString(rws1, rws2);
+								if (rws1.length() == 0 || rws == null) {
+									// writelockToBlock(ast, m, b, tolock, result);
+									lf.refactoring_null(ast, m);
+									count.bl_write_num++;
+								} else {
+									String s = bstring.match();
+									if (s == "D") {
+										lf.refactoring_down(ast, m, inmap.get(m));
+										count.bl_down_num++;
+									} else if (s == "DS") {
+										lf.refactoring_null(ast, m);
+										// lf.refactoring_downs(ast, m, inmap.get(m),rws2);
+									} else if (s == "U") {
+										lf.refactoring_null(ast, m);
+										// lf.refactoring_up(ast, m, inmap.get(m));
+										count.bl_up_num++;
+									} else if (s == "US") {
+										lf.refactoring_null(ast, m);
+										// lf.refactoring_ups(ast, m, inmap.get(m),rws2);
+									} else if (!rws2.contains(RWSign.WRITE_SIGN)) {
+										// lf.refactoring_null(ast, m);
+										lf.refactoring_null(ast, m);
+										// lf.refactoring_read(ast, m, inmap.get(m));
+										count.bl_read_num++;
+									} else {
+										// System.out.println(types.getName().toString()+" "+m.getName());
+										lf.refactoring_null(ast, m);
+										// lf.refactoring_write(ast, m, inmap.get(m));
+										count.bl_write_num++;
+									}
+								}
+							}
 						}
-						SideEffectAnalysis sda2 = new SideEffectAnalysis(callgraph);
-						String rws = sda2.sideEffect(m.getName().toString(), types.getName().toString(),
-								m.parameters());
-						if(rws=="condi") {
-							count.sy_can_not2++;
-							break;
-						}
-						String rws1 = sda2.getsToBlock();
-						String rws2 = sda2.makeReToBlock();
-						rutil.addImport(root.imports(), id1);
-						rutil.addImport(root.imports(), id2);
-						BlockString bstring=new BlockString(rws1,rws2);
-						if (rws1.length()==0||rws==null) {
-							//writelockToBlock(ast, m, b, tolock, result);
-							lf.refactoring_null(ast, m);
-							count.bl_write_num++;
-						} else {
-							String s=bstring.match();
-						if (s=="D") {
-							lf.refactoring_down(ast, m, inmap.get(m));
-							count.bl_down_num++;
-						} else if(s=="DS") {
-							lf.refactoring_null(ast, m);
-							//lf.refactoring_downs(ast, m, inmap.get(m),rws2);
-						}else if (s=="U") {
-							lf.refactoring_null(ast, m);
-							//lf.refactoring_up(ast, m, inmap.get(m));
-							count.bl_up_num++;
-						} else if(s=="US") {
-							lf.refactoring_null(ast, m);
-							//lf.refactoring_ups(ast, m, inmap.get(m),rws2);
-						}else if (!rws2.contains(RWSign.WRITE_SIGN)) {
-							lf.refactoring_null(ast, m);
-							//lf.refactoring_read(ast, m, inmap.get(m));
-							count.bl_read_num++;
-						} else {
-							//System.out.println(types.getName().toString()+"  "+m.getName());
-							lf.refactoring_null(ast, m);
-							//lf.refactoring_write(ast, m, inmap.get(m));
-							count.bl_write_num++;
-						}}
 					}
-				}}
-			}
+				}
 			}
 		}
 		return true;
 
 	}
-
-
 
 	public void setsynMethod(boolean n) {
 		synMethod = n;

@@ -150,6 +150,7 @@ public class RefactoringUtil {
 							// »ñÈ¡Ëø¾ä±ú
 							lockex.add(((SynchronizedStatement) m.getBody().statements().get(b)).getExpression()
 									.toString());
+							inmap.put(m, "this");
 						}
 					}
 				}}

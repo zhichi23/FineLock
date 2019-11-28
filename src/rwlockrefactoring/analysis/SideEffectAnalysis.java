@@ -210,8 +210,8 @@ public class SideEffectAnalysis {
 		int line = 0;
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
-			if (n.getMethod().getName().toString().equals(method) 
-			&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
+			if (n.getMethod().getName().toString().equals(method) ){
+			//&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 
 				if (ir == null||ir.getMethod() instanceof SummarizedMethod) {
@@ -245,17 +245,18 @@ public class SideEffectAnalysis {
 					list = new ArrayList<String>();
 					map.put(linenum.get(set.next()), list);
 				}
-				while (l < instructions.size()) {
-					if (instructions.get(l) instanceof SSAInvokeInstruction
-							&&!((SSAInvokeInstruction)instructions.get(l)).isSpecial()) {
-						SSAInvokeInstruction ssai=((SSAInvokeInstruction)instructions.get(l));
-							if (ssai.getCallSite().getDeclaredTarget().getName().toString().equals("wait")
-									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notify")
-									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notifyAll"))
-								return "condi";
-					}
-					l++;
-				}
+			//	while (l < instructions.size()) {
+//					if (instructions.get(l) instanceof SSAInvokeInstruction
+//							&&!((SSAInvokeInstruction)instructions.get(l)).isSpecial()) {
+//						SSAInvokeInstruction ssai=((SSAInvokeInstruction)instructions.get(l));
+//							if (ssai.getCallSite().getDeclaredTarget().getName().toString().equals("wait")
+//									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notify")
+//									|| ssai.getCallSite().getDeclaredTarget().getName().toString().equals("notifyAll"))
+//								return "condi";
+//					}
+//					System.out.println(instructions.get(l));
+//					l++;
+				//}
 				while (l < instructions.size()) {
 						sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
@@ -376,8 +377,11 @@ public class SideEffectAnalysis {
 					sb.append(geteffect(instructions.get(l), n, method));
 				}
 				l--;
-				bytecodeIndex = method.getBytecodeIndex(else_index - 1);
+				if(else_index>1) {
+					bytecodeIndex = method.getBytecodeIndex(else_index - 1);
 				sourceLineNum = method.getLineNumber(bytecodeIndex);
+				}
+				
 				map.get(linenum.get(sourceLineNum)).add(RWSign.END_CON_SIGN);
 				map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 				sb.append(RWSign.END_CON_SIGN);
@@ -541,7 +545,7 @@ public class SideEffectAnalysis {
 	}
 
 	public String getsToBlock() {
-		System.out.println(map);
+		//System.out.println(map);
 		StringBuffer sb = new StringBuffer();
 		for (int s : map.keySet()) {
 			if (map.get(s).contains("M")) {

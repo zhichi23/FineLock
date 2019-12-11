@@ -9,13 +9,21 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
+import rwlockrefactoring.analysis.Precondition;
 import rwlockrefactoring.util.LockSign;
 
 public class RefactoringToMethod implements LockRefactoring{
@@ -69,7 +77,7 @@ public class RefactoringToMethod implements LockRefactoring{
 				iftmp.delete();
 				Statement tmp = iftmp.getThenStatement();
 				Expression ex = iftmp.getExpression();
-				Name n=ast.newName("flag");
+				Name n=ast.newSimpleName(ex.toString());
 				//Expression ex3=n.expre;
 				ex.getParent().delete();
 
@@ -109,12 +117,7 @@ public class RefactoringToMethod implements LockRefactoring{
 		}
 		m.setBody(null);
 		for (int i = 1; i < tlist.size(); i++) {
-//			if(tlist.get(i) instanceof IfStatement) {
-//				System.out.println("i="+i);
-//				System.out.println("s"+tlist.size()); 
-//				for(int t=i+1;t<tlist.size();t++) {
 			body1.statements().add(tlist.get(i));
-
 		}
 
 		// 最外层try finally
@@ -132,6 +135,9 @@ public class RefactoringToMethod implements LockRefactoring{
 	@Override
 	public boolean refactoring_downs(AST ast, MethodDeclaration m, String ex,String linenum) {
 		// TODO Auto-generated method stub
+		List<String> readlist=new ArrayList<String>();
+		List<String> writelist=new ArrayList<String>();
+		
 		String lockname = result.get(ex);
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
 		// 释放锁
@@ -145,6 +151,52 @@ public class RefactoringToMethod implements LockRefactoring{
 		while (c[line] != 'R') {
 			line++;
 		}
+		List<Statement> bo=m.getBody().statements();
+		for(int i=0;i<line;i++) {
+			if(bo.get(i) instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement vb=(VariableDeclarationStatement)bo.get(i);
+				VariableDeclarationFragment vdf=(VariableDeclarationFragment)vb.fragments().get(0);
+				writelist.add(vdf.getName().toString());
+			}else if(bo.get(i) instanceof ReturnStatement) {
+				ReturnStatement rs=(ReturnStatement) bo.get(i);
+				writelist.add(rs.getExpression().toString());
+			}else if(bo.get(i) instanceof ExpressionStatement) {
+				ExpressionStatement es=(ExpressionStatement)bo.get(i);
+				if(es.getExpression() instanceof FieldAccess) {
+					System.out.println("field");
+					FieldAccess vs=(FieldAccess)es.getExpression();
+					System.out.println(vs.getName());
+				}else if(es.getExpression() instanceof InfixExpression) {
+					
+				}else if(es.getExpression() instanceof PrefixExpression) {
+					PrefixExpression pre=(PrefixExpression)es.getExpression();
+					writelist.add(pre.getOperand().toString());
+				}else if(es.getExpression() instanceof PostfixExpression) {
+					PostfixExpression pfe=(PostfixExpression)es.getExpression();
+					writelist.add(pfe.getOperand().toString());
+				}
+			}
+			
+		}
+		
+		for(int j=line;j<m.getBody().statements().size();j++) {
+			if(bo.get(j) instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement vb=(VariableDeclarationStatement)bo.get(j);
+				VariableDeclarationFragment vdf=(VariableDeclarationFragment)vb.fragments().get(0);
+				readlist.add(vdf.getName().toString());
+			}else if(bo.get(j) instanceof ReturnStatement) {
+				ReturnStatement rs=(ReturnStatement) bo.get(j);
+				readlist.add(rs.getExpression().toString());
+			}
+			
+		}
+		Precondition pc=new Precondition(readlist, writelist);
+		//前置条件
+		if(!pc.canRefactor()) {
+			refactoring_write(ast, m, ex);
+			return true;
+		}
+		
 		TryStatement trystate1 = ast.newTryStatement();
 		TryStatement trystate2 = ast.newTryStatement();
 		Block finalblock1 = ast.newBlock();

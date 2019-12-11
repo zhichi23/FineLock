@@ -395,7 +395,12 @@ public class SideEffectAnalysis {
 		} else if (ins instanceof SSAGetCaughtExceptionInstruction || ins instanceof SSAPhiInstruction
 				|| ins instanceof SSAPiInstruction) {
 
-		} else {
+		} else if(ins instanceof SSAReturnInstruction){
+			SSAReturnInstruction ssare = (SSAReturnInstruction) ins;
+			if(!ssare.returnsVoid()) {
+				sb.append(RWSign.READ_SIGN);
+			}
+		}else {
 			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
@@ -531,14 +536,11 @@ public class SideEffectAnalysis {
 				sb.append("W");
 			} else if (map.get(s).contains("R")) {
 				sb.append("R");
-			} else {
-				sb.append("A");
-			}
+			} 
+//			else {
+//				sb.append("A");
+//			}
 
-		}
-		if (sb.length() != 0) {
-			//删除方法最后的return
-			sb.deleteCharAt(sb.length() - 1);
 		}
 
 		return sb.toString();

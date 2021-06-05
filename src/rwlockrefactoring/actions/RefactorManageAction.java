@@ -17,7 +17,7 @@ import rwlockrefactoring.refactoring.RWLockRefactoringWizard;
 /**
  * 
  * @author Shuai
- * @version 1.0
+ * @version 2.0
  */
 public class RefactorManageAction implements IWorkbenchWindowActionDelegate {
 	// used by method selectionChanged

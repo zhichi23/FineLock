@@ -1,13 +1,7 @@
 package rwlockrefactoring.actions;
 
-import java.io.IOException;
-
-import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaModel;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
@@ -17,17 +11,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 
-import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
-
 import rwlockrefactoring.refactoring.RWLockRefactoring;
 import rwlockrefactoring.refactoring.RWLockRefactoringWizard;
 
 /**
  * 
- * 
- * 
- * @author Shao
+ * @author Shuai
  * @version 1.0
  */
 public class RefactorManageAction implements IWorkbenchWindowActionDelegate {
@@ -57,7 +46,6 @@ public class RefactorManageAction implements IWorkbenchWindowActionDelegate {
 	 * changed as user selected
 	 */
 	@Override
-	// selection中记录了用户选择部分。首先判断选择的部分数目是否唯一，然后判断这个唯一的选择部分是不是Java模型元素
 	public void selectionChanged(IAction action, ISelection selection) {
 		if (selection.isEmpty())
 			select = null;

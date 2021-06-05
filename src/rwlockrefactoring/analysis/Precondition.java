@@ -2,8 +2,8 @@ package rwlockrefactoring.analysis;
 
 import java.util.List;
 /**
- * 重构的前置条件
- * @author shao
+ * 
+ * @author Shuai
  *
  */
 public class Precondition {

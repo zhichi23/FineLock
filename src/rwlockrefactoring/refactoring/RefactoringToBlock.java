@@ -74,16 +74,13 @@ public class RefactoringToBlock implements LockRefactoring {
 				IfStatement iftmp = ((IfStatement) list.get(i));
 				IfStatement ifstate = ast.newIfStatement();
 
-				// 删除父节点
 				iftmp.delete();
 				Statement tmp1 = iftmp.getThenStatement();
 				Expression ex = iftmp.getExpression();
 
-				// 把父节点置空
 				iftmp.setThenStatement(ast.newAssertStatement());
 				iftmp.setExpression(ast.newCastExpression());
 
-				// 内层的try finally
 				if (ifbody.statements().add(tmp1)) {
 
 					finalblock1.statements().add(read_lock2);
@@ -106,7 +103,6 @@ public class RefactoringToBlock implements LockRefactoring {
 			body1.statements().add(tlist.get(i));
 		}
 
-		// 最外层try finally
 		finalblock.statements().add(read_unlock2);
 		trystate.setBody(body1);
 		trystate.setFinally(finalblock);
@@ -123,11 +119,9 @@ public class RefactoringToBlock implements LockRefactoring {
 		// TODO Auto-generated method stub
 		String lockname = result.get(ex);
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		Block tmp = ast.newBlock();
@@ -162,11 +156,9 @@ public class RefactoringToBlock implements LockRefactoring {
 		String lockname = result.get(ex);
 
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		Block tmp = ast.newBlock();
@@ -193,9 +185,7 @@ public class RefactoringToBlock implements LockRefactoring {
 	public boolean refactoring_read(AST ast, MethodDeclaration m, String ex) {
 		// TODO Auto-generated method stub
 		String lockname = result.get(ex);
-		// 加锁
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		Block tmp = ast.newBlock();
 
@@ -218,9 +208,7 @@ public class RefactoringToBlock implements LockRefactoring {
 	public boolean refactoring_write(AST ast, MethodDeclaration m, String ex) {
 		// TODO Auto-generated method stub
 		String lockname = result.get(ex);
-		// 加锁
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		Block tmp = ast.newBlock();
 
@@ -298,9 +286,7 @@ public class RefactoringToBlock implements LockRefactoring {
 	@Override
 	public void refactoring_null(AST ast, MethodDeclaration m) {
 		// TODO Auto-generated method stub
-		// 加锁
 		ExpressionStatement exstate = exp(ast, "nblock", LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// 释放锁
 		ExpressionStatement exstate1 = exp(ast, "nblock", LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		Block tmp = ast.newBlock();
 
@@ -316,7 +302,7 @@ public class RefactoringToBlock implements LockRefactoring {
 		trystate.setFinally(finalblock);
 		m.getBody().statements().add(bl, trystate);
 		m.getBody().statements().add(bl, exstate);
-		
+
 	}
 
 }

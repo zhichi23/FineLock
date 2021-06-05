@@ -1,15 +1,12 @@
 package rwlockrefactoring.refactoring;
 
-
 import org.eclipse.ltk.core.refactoring.Refactoring;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.UserInputWizardPage;
 
-
-
-public class RWLockRefactoringWizard extends RefactoringWizard{
+public class RWLockRefactoringWizard extends RefactoringWizard {
 	UserInputWizardPage page;
-	
+
 	public RWLockRefactoringWizard(Refactoring refactoring) {
 		super(refactoring, WIZARD_BASED_USER_INTERFACE);
 		// TODO Auto-generated constructor stub

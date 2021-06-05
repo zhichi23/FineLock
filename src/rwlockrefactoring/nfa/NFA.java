@@ -3,14 +3,12 @@ package rwlockrefactoring.nfa;
 import java.util.ArrayList;
 import java.util.Stack;
 
-
 public class NFA {
 	private char[] re;
 	private Digraph G;
-	private int M;//自动机的状态
+	private int M;
 
 	public NFA(String regexp) {
-		// 根据给定的正则表达式构
 		Stack<Integer> ops = new Stack<Integer>();
 		re = regexp.toCharArray();
 		M = re.length;
@@ -55,7 +53,7 @@ public class NFA {
 			dfs = new DirectedDFS(G, match);
 			for (int v = 0; v < G.V(); v++)
 				if (dfs.marked(v))
-					pc.add(v); 
+					pc.add(v);
 		}
 		for (int v : pc)
 			if (v == M)
@@ -63,5 +61,5 @@ public class NFA {
 
 		return false;
 	}
-	
+
 }

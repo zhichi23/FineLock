@@ -2,7 +2,6 @@ package rwlockrefactoring.util;
 
 public class Count {
 	
-	 // 统计同步方法
 	public int sy_num = 0;
 	public int sy_up_num = 0;
 	public int sy_down_num = 0;
@@ -10,14 +9,12 @@ public class Count {
 	public int sy_write_num = 0;
 	public int sy_op_num = 0;
 
-	//临时
 	public int sy_n = 0;
 	public int sy_c = 0;
 	
 	
 	public int sy_can_not1=0;
 	public int sy_can_not2=0;
-	//统计同步块
 	public int bl_num = 0;
 	public int bl_up_num = 0;
 	public int bl_down_num = 0;

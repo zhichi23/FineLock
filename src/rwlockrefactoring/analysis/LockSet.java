@@ -16,59 +16,58 @@ import com.ibm.wala.ipa.callgraph.propagation.PointerKey;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 
 /**
- *  
- * @author Shao
- * @version 4.0_01
- * lock{0} 静态字段对应的锁
- * tlock this和同步方法对应的锁
- * stlock 静态方法和getclass
- * ilock{0} 实例字段对应的锁
- * nlock{0} 非实例字段
+ * 
+ * @author Shuai
+ * @version 2.0
+ * 
  */
 public class LockSet {
 
 	PointerAnalysis<InstanceKey> pointer;
 	ClassHierarchy cha;
-	//存储实例字段和锁的映射关系
+
+	// for synchronized method
+	// instance field
 	Map<IField, String> ins_field_map = new HashMap<IField, String>();
-	//存储静态字段和锁的映射关系
+	// static field
 	Map<IField, String> st_field_lockmap = new HashMap<IField, String>();
-	//存储this句柄、实例方法和锁的映射关系
+
+	// for synchronized block
+	// instance field
 	Map<String, String> this_map = new HashMap<String, String>();
-	//存储getClass句柄、静态方法和锁的映射关系
+	// static field
 	Map<String, String> static_map = new HashMap<String, String>();
-	
-	String type=null;
+
+	String type = null;
+
 	public LockSet(PointerAnalysis<InstanceKey> p, ClassHierarchy c) {
 		pointer = p;
 		cha = c;
 	}
 
 	/**
-	  *  把静态字段和实例字段分别存储
-	 * @param lockex 锁句柄集合
-	 * @param type   当前类
+	 * mapping static field and instance field respectively
+	 * 
+	 * @param lockex lock expression
+	 * @param type   class
 	 */
 	public void lockmap(List<String> lockex, String type) {
 		Iterator<IClass> ic = cha.iterator();
-		this.type=type;
+		this.type = type;
 		while (ic.hasNext()) {
 			IClass iclass = ic.next();
 			if (iclass.getName().getClassName().toString().equals(type)) {
 				for (int i = 0; i < lockex.size(); i++) {
 					if (lockex.get(i).toString().equals("this")) {
 						this_map.put("this", "tlock");
-					//对静态方法和锁句柄getClass进行存储
 					} else if (lockex.get(i).toString().equals("static")
 							|| lockex.get(i).toString().equals("getClass")) {
 						static_map.put("static", "stlock");
 					} else {
-						//对同步块的锁句柄进行存储
 						Iterator<IField> ifield = iclass.getAllFields().iterator();
 						while (ifield.hasNext()) {
 							IField field = ifield.next();
 							if (field.getName().toString().equals(lockex.get(i))) {
-								// 把实例字段和静态字段分别存储
 								if (field.isStatic()) {
 									st_field_lockmap.put(field, null);
 								} else {
@@ -117,14 +116,14 @@ public class LockSet {
 
 		}
 	}
-	
+
 	public void makelock() {
 		inLock();
 		stLock();
 	}
 
 	public void stLock() {
-		//对静态字段对应的锁进行初始化
+		// static field
 		if (st_field_lockmap.size() != 0) {
 			Set<IField> keyset = st_field_lockmap.keySet();
 			AliasAnalysis alias = new AliasAnalysis(pointer);
@@ -138,7 +137,7 @@ public class LockSet {
 				k++;
 			}
 			st_field_lockmap.put(fields[0], "lock");
-			//进行别名分析
+			// alias analysis
 			for (int i = 0; i < k; i++) {
 				pp = hm.getPointerKeyForStaticField(fields[i]);
 				for (int j = i + 1; j < k; j++) {
@@ -158,7 +157,7 @@ public class LockSet {
 			Set<IField> keyset = ins_field_map.keySet();
 			Map<IField, InstanceKey> tmp = new HashMap<IField, InstanceKey>();
 			Collection<InstanceKey> co = pointer.getInstanceKeys();
-			
+
 			AliasAnalysis alias = new AliasAnalysis(pointer);
 			IField[] fields = new IField[keyset.size()];
 			HeapModel hm = pointer.getHeapModel();
@@ -175,13 +174,14 @@ public class LockSet {
 				Iterator<InstanceKey> io = co.iterator();
 				while (io.hasNext()) {
 					InstanceKey oo = (InstanceKey) io.next();
-					if (oo.getConcreteType().getReference().toString().equals(f.getReference().getDeclaringClass().toString())) {
+					if (oo.getConcreteType().getReference().toString()
+							.equals(f.getReference().getDeclaringClass().toString())) {
 						o = oo;
 						tmp.put(f, o);
 					}
 				}
 			}
-			
+
 			for (int i = 0; i < k; i++) {
 				if (tmp.get(fields[i]) != null) {
 					pp = hm.getPointerKeyForInstanceField(tmp.get(fields[i]), fields[i]);
@@ -194,7 +194,6 @@ public class LockSet {
 						}
 					}
 				} else {
-					//对非实例字段进行处理
 					ins_field_map.put(fields[i], "nlock" + i);
 				}
 			}

@@ -1,11 +1,5 @@
 package rwlockrefactoring.analysis;
 
+public class EclipseJavaProject {
 
-
-public class EclipseJavaProject{
-
-
-
-	
-	
 }

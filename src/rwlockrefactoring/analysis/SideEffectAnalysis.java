@@ -48,17 +48,15 @@ import rwlockrefactoring.util.RWString;
 
 /**
  * 
- * 
- * 
- * @author Shao
- * @version 4.0_01
+ * @author Shuai
+ * @version 2.0
  */
 public class SideEffectAnalysis {
 
 	boolean frist = true;
 	int l = 0;
 	int deep = 0;
-	int invo=0;
+	int invo = 0;
 
 	CallGraph cg;
 	Map<Integer, Integer> linenum = new HashMap<Integer, Integer>();
@@ -77,8 +75,6 @@ public class SideEffectAnalysis {
 
 	public String sideEffect(String method) throws IllegalArgumentException, CallGraphBuilderCancelException,
 			ClassHierarchyException, IOException, UnsupportedOperationException, InvalidClassFileException {
-		// 构建调用图
-		// CallGraph cg = callgraph();
 		StringBuffer sb = new StringBuffer();
 		IAnalysisCacheView cache = new AnalysisCacheImpl();
 		int if_index = 0;
@@ -87,7 +83,7 @@ public class SideEffectAnalysis {
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
 			if (n.getMethod().getName().toString().equals(method)) {
-				
+
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 				List<SSAInstruction> instructions = new ArrayList<SSAInstruction>();
 				if (ir == null || ir.getMethod() instanceof SummarizedMethod) {
@@ -115,7 +111,6 @@ public class SideEffectAnalysis {
 				for (int in = 0; in <= tm; in++) {
 					bytecodeIndex = bytemethod.getBytecodeIndex(in);
 					sourceLineNum = bytemethod.getLineNumber(bytecodeIndex);
-					// int sourceposition=method.getSourcePosition(ins.iindex);
 					if (!linenum.containsKey(sourceLineNum)) {
 						linenum.put(sourceLineNum, line);
 						line++;
@@ -140,19 +135,17 @@ public class SideEffectAnalysis {
 	public String sideEffect(String method, String cla)
 			throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException, IOException,
 			UnsupportedOperationException, InvalidClassFileException {
-		// 构建调用图
-		// CallGraph cg = callgraph();
 		StringBuffer sb = new StringBuffer();
 		IAnalysisCacheView cache = new AnalysisCacheImpl();
-		
+
 		int line = 0;
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
 			if (n.getMethod().getName().toString().equals(method)
 					&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
-				
-				if (ir == null|| ir.getMethod() instanceof SummarizedMethod) {
+
+				if (ir == null || ir.getMethod() instanceof SummarizedMethod) {
 					return null;
 				}
 				IBytecodeMethod bytemethod = (IBytecodeMethod) ir.getMethod();
@@ -160,7 +153,6 @@ public class SideEffectAnalysis {
 				List<String> tmp = new LinkedList<String>();
 				Iterator<SSAInstruction> instruction = ir.iterateAllInstructions();
 
-				// 遍历方法中的所有指令
 				while (instruction.hasNext()) {
 					SSAInstruction ins = instruction.next();
 					instructions.add(ins);
@@ -196,30 +188,27 @@ public class SideEffectAnalysis {
 		return null;
 
 	}
-	
+
 	@SuppressWarnings("rawtypes")
-	public String sideEffect(String method, String cla,List p)
+	public String sideEffect(String method, String cla, List p)
 			throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException, IOException,
 			UnsupportedOperationException, InvalidClassFileException {
-		// 构建调用图
-		// CallGraph cg = callgraph();
 		StringBuffer sb = new StringBuffer();
 		IAnalysisCacheView cache = new AnalysisCacheImpl();
-		int if_index = 0;
-		int else_index = Integer.MAX_VALUE;
 		int line = 0;
 		int bytecodeIndex, sourceLineNum;
 		for (CGNode n : cg) {
-			if (n.getMethod().getName().toString().equals(method) ){
-			//&& n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla)) {
+			if (n.getMethod().getName().toString().equals(method)) {
+				// &&
+				// n.getMethod().getDeclaringClass().getName().getClassName().toString().equals(cla))
+				// {
 				IR ir = cache.getIR(n.getMethod(), Everywhere.EVERYWHERE);
 
-				if (ir == null||ir.getMethod() instanceof SummarizedMethod) {
+				if (ir == null || ir.getMethod() instanceof SummarizedMethod) {
 					return null;
 				}
 				IBytecodeMethod bytemethod = (IBytecodeMethod) ir.getMethod();
 				Iterator<SSAInstruction> instruction = ir.iterateAllInstructions();
-				// 遍历方法中的所有指令
 				while (instruction.hasNext()) {
 					SSAInstruction ins = instruction.next();
 					instructions.add(ins);
@@ -234,7 +223,6 @@ public class SideEffectAnalysis {
 				for (int in = 0; in <= tm; in++) {
 					bytecodeIndex = bytemethod.getBytecodeIndex(in);
 					sourceLineNum = bytemethod.getLineNumber(bytecodeIndex);
-					// int sourceposition=method.getSourcePosition(ins.iindex);
 					if (!linenum.containsKey(sourceLineNum)) {
 						linenum.put(sourceLineNum, line);
 						line++;
@@ -245,7 +233,7 @@ public class SideEffectAnalysis {
 					list = new ArrayList<String>();
 					map.put(linenum.get(set.next()), list);
 				}
-			//	while (l < instructions.size()) {
+				// while (l < instructions.size()) {
 //					if (instructions.get(l) instanceof SSAInvokeInstruction
 //							&&!((SSAInvokeInstruction)instructions.get(l)).isSpecial()) {
 //						SSAInvokeInstruction ssai=((SSAInvokeInstruction)instructions.get(l));
@@ -256,9 +244,9 @@ public class SideEffectAnalysis {
 //					}
 //					System.out.println(instructions.get(l));
 //					l++;
-				//}
+				// }
 				while (l < instructions.size()) {
-						sb.append(geteffect(instructions.get(l), n, bytemethod));
+					sb.append(geteffect(instructions.get(l), n, bytemethod));
 				}
 				return sb.toString();
 			}
@@ -268,7 +256,6 @@ public class SideEffectAnalysis {
 
 	}
 
-
 	// 传入一个指令数组或是arraylist
 	public String geteffect(SSAInstruction ins, CGNode n, IBytecodeMethod method) throws InvalidClassFileException {
 		int if_index = 0;
@@ -277,7 +264,7 @@ public class SideEffectAnalysis {
 		StringBuffer sb = new StringBuffer();
 		if (ins instanceof SSAInvokeInstruction) {
 			SSAInvokeInstruction ssai = (SSAInvokeInstruction) ins;
-			
+
 			if (ssai.getCallSite().getDeclaredTarget().getDeclaringClass().getName().getPackage().toString()
 					.equals("java/util")) {
 				if (analysisPrimordial(ssai.getDeclaredTarget().getName().toString(), n)) {
@@ -377,11 +364,11 @@ public class SideEffectAnalysis {
 					sb.append(geteffect(instructions.get(l), n, method));
 				}
 				l--;
-				if(else_index>1) {
+				if (else_index > 1) {
 					bytecodeIndex = method.getBytecodeIndex(else_index - 1);
-				sourceLineNum = method.getLineNumber(bytecodeIndex);
+					sourceLineNum = method.getLineNumber(bytecodeIndex);
 				}
-				
+
 				map.get(linenum.get(sourceLineNum)).add(RWSign.END_CON_SIGN);
 				map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 				sb.append(RWSign.END_CON_SIGN);
@@ -395,12 +382,12 @@ public class SideEffectAnalysis {
 		} else if (ins instanceof SSAGetCaughtExceptionInstruction || ins instanceof SSAPhiInstruction
 				|| ins instanceof SSAPiInstruction) {
 
-		} else if(ins instanceof SSAReturnInstruction){
+		} else if (ins instanceof SSAReturnInstruction) {
 			SSAReturnInstruction ssare = (SSAReturnInstruction) ins;
-			if(!ssare.returnsVoid()) {
+			if (!ssare.returnsVoid()) {
 				sb.append(RWSign.READ_SIGN);
 			}
-		}else {
+		} else {
 			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
@@ -436,7 +423,6 @@ public class SideEffectAnalysis {
 								|| ins2 instanceof SSAReturnInstruction) {
 							rcout++;
 						} else if (ins2 instanceof SSAInvokeInstruction) {
-							// 判断是否是构造函数
 							if (((SSAAbstractInvokeInstruction) ins2).getDeclaredTarget().isInit()) {
 								rcout++;
 							} else if (analysisPrimordial(
@@ -458,48 +444,48 @@ public class SideEffectAnalysis {
 	}
 
 	public boolean analysisInvokeMethod(String m, CGNode n) {
-		
+
 		IAnalysisCacheView cache = new AnalysisCacheImpl();
 		Iterator<CGNode> outer = cg.getSuccNodes(n);
 		int rcout = 0;
 		int icout = 0;
-		if(invo<4) {
-		invo++;
-		while (outer.hasNext()) {
-			CGNode me = outer.next();
-			if (me.getMethod().getName().toString().equals(m)) {
-				IR lr = cache.getIR(me.getMethod());
-				if (lr == null) {
-					return false;
-				}
-				Iterator<SSAInstruction> instruction2 = lr.iterateAllInstructions();
-				while (instruction2.hasNext()) {
-					icout++;
-					SSAInstruction ins2 = instruction2.next();
-					if (ins2 instanceof SSAPutInstruction || ins2 instanceof SSAAbstractBinaryInstruction) {
+		if (invo < 4) {
+			invo++;
+			while (outer.hasNext()) {
+				CGNode me = outer.next();
+				if (me.getMethod().getName().toString().equals(m)) {
+					IR lr = cache.getIR(me.getMethod());
+					if (lr == null) {
 						return false;
-					} else if (ins2 instanceof SSAMonitorInstruction) {
-						return true;
-					} else if (ins2 instanceof SSAConversionInstruction || ins2 instanceof SSAGetInstruction
-							|| ins2 instanceof SSAReturnInstruction) {
-						rcout++;
-					} else if (ins2 instanceof SSAInvokeInstruction) {
-						// 判断是否是构造函数
-						if (((SSAAbstractInvokeInstruction) ins2).getDeclaredTarget().isInit()) {
-							rcout++;
-						} else if (analysisInvokeMethod(
-								((SSAAbstractInvokeInstruction) ins2).getDeclaredTarget().getName().toString(), me)) {
-							rcout++;
-						} else {
+					}
+					Iterator<SSAInstruction> instruction2 = lr.iterateAllInstructions();
+					while (instruction2.hasNext()) {
+						icout++;
+						SSAInstruction ins2 = instruction2.next();
+						if (ins2 instanceof SSAPutInstruction || ins2 instanceof SSAAbstractBinaryInstruction) {
 							return false;
+						} else if (ins2 instanceof SSAMonitorInstruction) {
+							return true;
+						} else if (ins2 instanceof SSAConversionInstruction || ins2 instanceof SSAGetInstruction
+								|| ins2 instanceof SSAReturnInstruction) {
+							rcout++;
+						} else if (ins2 instanceof SSAInvokeInstruction) {
+							if (((SSAAbstractInvokeInstruction) ins2).getDeclaredTarget().isInit()) {
+								rcout++;
+							} else if (analysisInvokeMethod(
+									((SSAAbstractInvokeInstruction) ins2).getDeclaredTarget().getName().toString(),
+									me)) {
+								rcout++;
+							} else {
+								return false;
+							}
 						}
 					}
-				}
-				if (icout == rcout) {
-					return true;
+					if (icout == rcout) {
+						return true;
+					}
 				}
 			}
-		}
 		}
 		return true;
 	}
@@ -512,10 +498,11 @@ public class SideEffectAnalysis {
 		return writlist;
 	}
 
-	//C是if语句，E是其他条件语句
+	// C is if statement
+	// E is other condition statement
 	public String getsToMethod() {
 		StringBuffer sb = new StringBuffer();
-		
+
 		for (int s : map.keySet()) {
 			if (map.get(s).contains("C")) {
 				if (map.get(s).contains("G")) {
@@ -536,7 +523,7 @@ public class SideEffectAnalysis {
 				sb.append("W");
 			} else if (map.get(s).contains("R")) {
 				sb.append("R");
-			} 
+			}
 //			else {
 //				sb.append("A");
 //			}
@@ -547,7 +534,7 @@ public class SideEffectAnalysis {
 	}
 
 	public String getsToBlock() {
-		//System.out.println(map);
+		// System.out.println(map);
 		StringBuffer sb = new StringBuffer();
 		for (int s : map.keySet()) {
 			if (map.get(s).contains("M")) {
@@ -588,9 +575,9 @@ public class SideEffectAnalysis {
 			}
 
 		}
-		
+
 		if (sb.length() != 0) {
-			//删除方法最后的return
+			// 删除方法最后的return
 			sb.deleteCharAt(sb.length() - 1);
 		}
 		return sb.toString();
@@ -633,7 +620,7 @@ public class SideEffectAnalysis {
 			if (c[i] == 'M') {
 				sb.append("M");
 			} else if (c[i] == 'C' || c[i] == 'E') {
-				while (i+1<c.length&&c[++i] != 'T') {
+				while (i + 1 < c.length && c[++i] != 'T') {
 					tmp.add(c[i]);
 				}
 				if (tmp.contains('W')) {
@@ -652,11 +639,11 @@ public class SideEffectAnalysis {
 		int y = 0;
 		int bindex = 0;
 		int aindex = 0;
-		while (t-1>=0&&c[t - 1] != 'M') {
+		while (t - 1 >= 0 && c[t - 1] != 'M') {
 			t--;
 			aindex++;
 		}
-		while (y<c.length&&c.length!=0&&c[y] != 'M') {
+		while (y < c.length && c.length != 0 && c[y] != 'M') {
 			y++;
 			bindex++;
 		}
@@ -664,10 +651,10 @@ public class SideEffectAnalysis {
 			sb.deleteCharAt(sb.length() - 1);
 		}
 		for (int i = 0; i < bindex; i++) {
-			if(sb.length()!=0) {
+			if (sb.length() != 0) {
 				sb.deleteCharAt(0);
 			}
-			
+
 		}
 		return sb.toString();
 

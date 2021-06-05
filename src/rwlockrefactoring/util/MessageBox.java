@@ -1,17 +1,16 @@
 package rwlockrefactoring.util;
 
 public class MessageBox {
-	
-	
+
 	public void print_num(Count count) {
-		System.out.println("同步方法:" + count.sy_num + "  " + "锁升级:" + count.sy_up_num +
-				"  " + "锁降级:" + count.sy_down_num + "  " + "读锁:"
-				+ count.sy_read_num + "  " + "写锁:" + count.sy_write_num+" "+"乐观:"+count.sy_op_num);
-		System.out.println("bu:"+count.sy_n+"  "+"c:"+count.sy_c);
-		System.out.println("不能重构"+count.sy_can_not1);
-		System.out.println("状态重构"+count.sy_can_not2);
-		System.out.println("同步块:" + count.bl_num + "  " + "锁升级:" + count.bl_up_num 
-				+ "  " + "锁降级:" + count.bl_down_num + "  " + "读锁:"
-				+ count.bl_read_num + "  " + "写锁:" + count.bl_write_num);
+		System.out.println("synchronized method(s):" + count.sy_num + "  " + "splitting:" + count.sy_up_num + "  "
+				+ "downgrading:" + count.sy_down_num + "  " + "read:" + count.sy_read_num + "  " + "write:"
+				+ count.sy_write_num + " " + "opt:" + count.sy_op_num);
+		System.out.println("bu:" + count.sy_n + "  " + "c:" + count.sy_c);
+		System.out.println("can't refactor" + count.sy_can_not1);
+		System.out.println("condition refactor" + count.sy_can_not2);
+		System.out.println("synchronized block(s):" + count.bl_num + "  " + "splitting:" + count.bl_up_num + "  "
+				+ "downgrading:" + count.bl_down_num + "  " + "read:" + count.bl_read_num + "  " + "write:"
+				+ count.bl_write_num);
 	}
 }

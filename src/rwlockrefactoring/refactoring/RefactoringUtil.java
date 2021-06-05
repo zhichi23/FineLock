@@ -19,13 +19,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 public class RefactoringUtil {
-	
-	
-	
-	//import并发包
+
 	public void addImport(List<ImportDeclaration> root, ImportDeclaration id) {
 		int ip = 0;
-		// 防止重复import
 		if (root != null && root.size() != 0) {
 			for (int im1 = 0; im1 < root.size(); im1++) {
 				if (!root.get(im1).toString().equals(id.toString())) {
@@ -36,33 +32,28 @@ public class RefactoringUtil {
 				root.add(id);
 			}
 		} else {
-			// 可能存在问题
 			root.add(id);
 		}
 	}
-	
-	
-	//修饰符的定义
+
 	public void aadfieldModifiers(FieldDeclaration f, AST ast, boolean static_flag) {
-		//静态修饰符标志
 		if (static_flag) {
 			f.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 			f.modifiers().add(ast.newModifier(ModifierKeyword.STATIC_KEYWORD));
 		} else {
 			f.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 		}
-	}	
-	
+	}
+
 	/**
-	 * 锁表达式与对应锁的映射关系的集合
+	 * 
 	 * @param ast
 	 * @param types
 	 * @param ls
 	 * @param list
-	 * @param result 表达式与锁的映射关系
+	 * @param result
 	 */
-	 public void decalock(AST ast, TypeDeclaration types, LockSet ls, List<String> list, 
-			Map<String, String> result) {
+	public void decalock(AST ast, TypeDeclaration types, LockSet ls, List<String> list, Map<String, String> result) {
 		ls.makelock();
 		Map<IField, String> slockmap = ls.getsmap();
 		Map<IField, String> lockmap = ls.getmap();
@@ -91,7 +82,7 @@ public class RefactoringUtil {
 			result.put(key.getName().toString(), lockmap.get(key));
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void addlock(AST ast, TypeDeclaration types, String lockname, boolean flag) {
 		VariableDeclarationFragment lock = ast.newVariableDeclarationFragment();
@@ -106,66 +97,56 @@ public class RefactoringUtil {
 
 		types.bodyDeclarations().add(0, fieldDeclaration);
 	}
-	
-	/**
-	 * 获取当前类下所有锁句柄
-	 * 
-	 * @param lockex 用来存储锁句柄
-	 * @param inmap  用来存储方法类型的映射关系
-	 * @param types  当前类
-	 */
-	public void getlockex(List<String> lockex, Map<MethodDeclaration, String> inmap, 
-			TypeDeclaration types,List<MethodDeclaration> abs) {
-		if(!types.isInterface()) {
-		MethodDeclaration[] ms = types.getMethods();
-		// 遍历当前类的所有方法
-		for (MethodDeclaration m : ms) {
-			// 遍历修饰符
-			for (int i = 0; i < m.modifiers().size(); i++) {
-				// 获取同步方法的锁
-				if (m.modifiers().get(i).toString().equals("synchronized")) {
-					// 判断是否是静态方法，static和synchronized的前后位置
-					for (int j = 0; j < m.modifiers().size(); j++) {
-						if (m.modifiers().get(j).toString().equals("static")) {
-							lockex.add("static");
-							inmap.put(m, "static");
-							break;
-						} else if (m.modifiers().get(j).toString().equals("abstract")||
-								m.modifiers().get(j).toString().equals("native")) {
-							abs.add(m);
-						} else if (j + 1 == m.modifiers().size()) {
-							lockex.add("this");
-							inmap.put(m, "this");
-						}
-					}
-				} else if (m.modifiers().get(i).toString().equals("abstract")||
-						m.modifiers().get(i).toString().equals("native")) {
-					abs.add(m);
-				} else if (i + 1 == m.modifiers().size()) {
-					// 获取同步块的锁
-					//System.out.println(m.getName() + "----" + types.getName().toString());
-					if(m.getBody()!=null) {
-					for (int b = 0; b < m.getBody().statements().size(); b++) {
-						if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
-							// 获取锁句柄
-							lockex.add(((SynchronizedStatement) m.getBody().statements().get(b)).getExpression()
-									.toString());
-							inmap.put(m, "this");
-						}
-					}
-				}}
-			}
 
-		}}
+	/**
+	 * 
+	 * @param lockex
+	 * @param inmap
+	 * @param types
+	 */
+	public void getlockex(List<String> lockex, Map<MethodDeclaration, String> inmap, TypeDeclaration types,
+			List<MethodDeclaration> abs) {
+		if (!types.isInterface()) {
+			MethodDeclaration[] ms = types.getMethods();
+			for (MethodDeclaration m : ms) {
+				for (int i = 0; i < m.modifiers().size(); i++) {
+					if (m.modifiers().get(i).toString().equals("synchronized")) {
+						for (int j = 0; j < m.modifiers().size(); j++) {
+							if (m.modifiers().get(j).toString().equals("static")) {
+								lockex.add("static");
+								inmap.put(m, "static");
+								break;
+							} else if (m.modifiers().get(j).toString().equals("abstract")
+									|| m.modifiers().get(j).toString().equals("native")) {
+								abs.add(m);
+							} else if (j + 1 == m.modifiers().size()) {
+								lockex.add("this");
+								inmap.put(m, "this");
+							}
+						}
+					} else if (m.modifiers().get(i).toString().equals("abstract")
+							|| m.modifiers().get(i).toString().equals("native")) {
+						abs.add(m);
+					} else if (i + 1 == m.modifiers().size()) {
+						if (m.getBody() != null) {
+							for (int b = 0; b < m.getBody().statements().size(); b++) {
+								if (m.getBody().statements().get(b) instanceof SynchronizedStatement) {
+									lockex.add(((SynchronizedStatement) m.getBody().statements().get(b)).getExpression()
+											.toString());
+									inmap.put(m, "this");
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
 	}
-	
-	
-	
-	//字段的声明
+
 	@Deprecated
 	private void addfieldDeclaration(TypeDeclaration types, MethodDeclaration m, FieldDeclaration f, int cos) {
 		int field = 0;
-		// 防止字段重复声明
 		for (int i = 0; i < types.getMethods().length; i++) {
 			if (m.getName() == types.getMethods()[i].getName()) {
 				for (int j = 0; j < types.getFields().length; j++) {
@@ -179,8 +160,5 @@ public class RefactoringUtil {
 			}
 		}
 	}
-
-	
-
 
 }

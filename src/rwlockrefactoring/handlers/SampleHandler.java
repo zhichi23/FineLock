@@ -20,7 +20,7 @@ public class SampleHandler extends AbstractHandler {
 		IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindowChecked(event);
 		MessageDialog.openInformation(
 				window.getShell(),
-				"Rwlock-refactoring",
+				"FineLock",
 				"Hello, Eclipse");
 		return null;
 	}

@@ -60,18 +60,15 @@ import rwlockrefactoring.util.RWString;
  * This class is the refactored action class The preview of the refactoring is
  * also done through this class
  * 
- * @author Shao
- * @version 4.0_01
+ * @author Shuai
+ * @version 2.o
  * 
  */
 public class RWLockRefactoring extends Refactoring {
 
-	// 所有的重构变化
 	List<Change> changeManager = new ArrayList<Change>();
-	// 所有需要修改的JavaElement
 	List<IJavaElement> compilationUnits = new ArrayList<IJavaElement>();
 
-	// 所要重构程序的路径
 	static IPath filename;
 
 	NFA down_nfa_method = new NFA(RWString.DOWNGRADE_LOCK_METHOD);
@@ -188,7 +185,6 @@ public class RWLockRefactoring extends Refactoring {
 //						for (IJavaElement ele : ((IPackageFragment)jee).getChildren()) {
 //							if (ele instanceof IPackageFragment) {
 //								IPackageFragment fragment = (IPackageFragment) ele;
-//								// 遍历所有类
 //								for (ICompilationUnit unit : fragment.getCompilationUnits()) {
 //									compilationUnits.add(unit);
 //								}
@@ -222,7 +218,6 @@ public class RWLockRefactoring extends Refactoring {
 				for (IJavaElement ele : root.getChildren()) {
 					if (ele instanceof IPackageFragment) {
 						IPackageFragment fragment = (IPackageFragment) ele;
-						// 遍历所有类
 						for (ICompilationUnit unit : fragment.getCompilationUnits()) {
 							compilationUnits.add(unit);
 						}
@@ -305,12 +300,13 @@ public class RWLockRefactoring extends Refactoring {
 			}
 		});
 	}
-	
-	Pattern m_pd=Pattern.compile(RWString.stamp_d);
-	Pattern m_pu=Pattern.compile(RWString.stamp_up);
-	Pattern m_po=Pattern.compile(RWString.stamp_op);
-	Pattern m_pr=Pattern.compile(RWString.stamp_r);
-	Matcher m1,m2,m3,m4;
+
+	Pattern m_pd = Pattern.compile(RWString.stamp_d);
+	Pattern m_pu = Pattern.compile(RWString.stamp_up);
+	Pattern m_po = Pattern.compile(RWString.stamp_op);
+	Pattern m_pr = Pattern.compile(RWString.stamp_r);
+	Matcher m1, m2, m3, m4;
+
 	@SuppressWarnings("unchecked")
 	private boolean collectChanges(CompilationUnit root, TypeDeclaration types)
 			throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException,
@@ -346,33 +342,16 @@ public class RWLockRefactoring extends Refactoring {
 						countmap.put(types.getName().toString(), countmap.get(types.getName().toString()) + 1);
 						String rws = sda1.sideEffect(m.getName().toString(), types.getName().toString(),
 								m.parameters());
-						
+
 						String rws1 = sda1.getsToMethod();
 						String rws2 = sda1.makeReToMethod();
-						System.out.println(m.getName()+": "+rws1+">>>>"+rws2);
 						MethodString mstring = new MethodString(rws1, rws2);
-						
-						//DFA down_dfa = new DFA(rws1);
+
+						// DFA down_dfa = new DFA(rws1);
 						rutil.addImport(root.imports(), id1);
 						rutil.addImport(root.imports(), id2);
 						m.modifiers().remove(i);
-//						if(m_pd.matcher(rws1).matches()) {
-//							count.sy_down_num++;
-//							lf.refactoring_null(ast, m);
-//						}else if (m_po.matcher(rws1).matches()) {
-//							count.sy_op_num++;
-//							lf.refactoring_null(ast, m);
-//						}else if (m_pu.matcher(rws1).matches()) {
-//							count.sy_up_num++;
-//							lf.refactoring_null(ast, m);
-//						}else if (m_pr.matcher(rws1).matches()) {
-//							count.sy_read_num++;
-//							lf.refactoring_null(ast, m);
-//						}else {
-//							count.sy_write_num++;
-//							lf.refactoring_null(ast, m);
-//						}
-						
+
 						if (rws == null || rws1.length() == 0) {
 							if (zanshi == 0) {
 								rutil.addlock(ast, types, "nulock", true);
@@ -380,10 +359,9 @@ public class RWLockRefactoring extends Refactoring {
 							zanshi++;
 							lf.refactoring_null(ast, m);
 							// writelockToMethod(ast, m, inmap.get(m), result);
-							//count.sy_write_num++;
 						} else {
 							String s = mstring.match();
-							
+
 							if (s == "D") {
 								lf.refactoring_down(ast, m, inmap.get(m));
 								count.sy_down_num++;
@@ -391,23 +369,19 @@ public class RWLockRefactoring extends Refactoring {
 								lf.refactoring_up(ast, m, inmap.get(m));
 								count.sy_up_num++;
 							} else if (s == "DS") {
-								lf.refactoring_write(ast, m, inmap.get(m));
-								//lf.refactoring_downs(ast, m, inmap.get(m), rws2);
-								System.out.println(types.toString()+"---->"+m.getName());
+								lf.refactoring_downs(ast, m, inmap.get(m), rws2);
 								count.sy_down_num++;
 							} else if (s == "US") {
-								//lf.refactoring_write(ast, m, inmap.get(m));
 								lf.refactoring_ups(ast, m, inmap.get(m), rws2);
 								count.sy_up_num++;
-							} else if (!rws1.contains(RWSign.WRITE_SIGN)&&rws1.contains(RWSign.READ_SIGN)) {
+							} else if (!rws1.contains(RWSign.WRITE_SIGN) && rws1.contains(RWSign.READ_SIGN)) {
 								lf.refactoring_read(ast, m, inmap.get(m));
 								count.sy_read_num++;
-							} else if(s == "C"){
-								//删除
+							} else if (s == "C") {
 								lf.refactoring_null(ast, m);
 								count.sy_c++;
-							}else {
-								//lf.refactoring_ups(ast, m, inmap.get(m), rws2);
+							} else {
+								// lf.refactoring_ups(ast, m, inmap.get(m), rws2);
 								lf.refactoring_write(ast, m, inmap.get(m));
 								count.sy_write_num++;
 							}
@@ -452,23 +426,21 @@ public class RWLockRefactoring extends Refactoring {
 										count.bl_down_num++;
 									} else if (s == "DS") {
 										lf.refactoring_null(ast, m);
-										// lf.refactoring_downs(ast, m, inmap.get(m),rws2);
+										lf.refactoring_downs(ast, m, inmap.get(m), rws2);
 									} else if (s == "U") {
 										lf.refactoring_null(ast, m);
-										// lf.refactoring_up(ast, m, inmap.get(m));
+										lf.refactoring_up(ast, m, inmap.get(m));
 										count.bl_up_num++;
 									} else if (s == "US") {
 										lf.refactoring_null(ast, m);
-										// lf.refactoring_ups(ast, m, inmap.get(m),rws2);
+										lf.refactoring_ups(ast, m, inmap.get(m), rws2);
 									} else if (!rws2.contains(RWSign.WRITE_SIGN)) {
-										// lf.refactoring_null(ast, m);
 										lf.refactoring_null(ast, m);
-										// lf.refactoring_read(ast, m, inmap.get(m));
+										lf.refactoring_read(ast, m, inmap.get(m));
 										count.bl_read_num++;
 									} else {
-										// System.out.println(types.getName().toString()+" "+m.getName());
 										lf.refactoring_null(ast, m);
-										// lf.refactoring_write(ast, m, inmap.get(m));
+										lf.refactoring_write(ast, m, inmap.get(m));
 										count.bl_write_num++;
 									}
 								}
@@ -481,7 +453,6 @@ public class RWLockRefactoring extends Refactoring {
 		return true;
 
 	}
-	
 
 	public void setsynMethod(boolean n) {
 		synMethod = n;

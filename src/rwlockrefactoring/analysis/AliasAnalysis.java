@@ -41,8 +41,6 @@ public class AliasAnalysis {
 			return false;
 		for(PointerKey pk : pointerKeyList){
 			if(mayAlias(pk, pointerKey)){
-//				System.out.println(pk);
-//				System.out.println(pk2);
 				return true;
 			}
 		}

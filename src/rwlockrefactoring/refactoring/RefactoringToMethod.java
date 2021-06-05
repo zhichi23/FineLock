@@ -6,7 +6,9 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -15,6 +17,7 @@ import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -26,11 +29,12 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import rwlockrefactoring.analysis.Precondition;
 import rwlockrefactoring.util.LockSign;
 
-public class RefactoringToMethod implements LockRefactoring{
-	
+public class RefactoringToMethod implements LockRefactoring {
+
 	Map<String, String> result;
-	RefactoringToMethod(Map<String, String> result){
-		this.result=result;
+
+	RefactoringToMethod(Map<String, String> result) {
+		this.result = result;
 	}
 
 	@Override
@@ -38,7 +42,7 @@ public class RefactoringToMethod implements LockRefactoring{
 		// TODO Auto-generated method stub
 		String lockname = result.get(lex);
 		/**
-		 * exstate ¶ÁËø¼ÓËø exstate1 ¶ÁËøÊÍ·Å exstate3 Ð´Ëø¼ÓËø exstate4 Ð´ËøÊÍ·Å
+		 * exstate ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ exstate1 ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ exstate3 Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ exstate4 Ð´ï¿½ï¿½ï¿½Í·ï¿½
 		 */
 		ExpressionStatement read_lock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
 		ExpressionStatement read_unlock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
@@ -73,22 +77,23 @@ public class RefactoringToMethod implements LockRefactoring{
 				IfStatement iftmp = ((IfStatement) list.get(i));
 				IfStatement ifstate = ast.newIfStatement();
 				IfStatement ifstate2 = ast.newIfStatement();
-				// É¾³ý¸¸½Úµã
+				
 				iftmp.delete();
 				Statement tmp = iftmp.getThenStatement();
 				Expression ex = iftmp.getExpression();
-				Name n=ast.newSimpleName(ex.toString());
-				//Expression ex3=n.expre;
+				//Name n = ast.newSimpleName(ex.toString());
+				// Expression ex3=n.expre;
+				
 				ex.getParent().delete();
 
-				// °Ñ¸¸½ÚµãÖÃ¿Õ
+				
 				iftmp.setThenStatement(ast.newAssertStatement());
 
 				iftmp.setExpression(ast.newCastExpression());
 				// ExpressionStatement ex1 = ast.newExpressionStatement(ex);
 				// ExpressionStatement
 				// ex3=ast.newExpressionStatement(ast.newSimpleName(s.toString()));
-				// ÄÚ²ãµÄtry finally
+		
 				if (ifbody.statements().add(tmp)) {
 
 					finalblock1.statements().add(read_lock2);
@@ -96,11 +101,13 @@ public class RefactoringToMethod implements LockRefactoring{
 					trystate1.setBody(ifbody);
 					trystate1.setFinally(finalblock1);
 					ifbody1.statements().add(trystate1);
-					//TODO ´ý½â¾ö
-					//ASTNode ifCondition = rewrite.createStringPlaceholder(ex.toString(),
-					//		ASTNode.CONDITIONAL_EXPRESSION);
-					ifstate.setExpression((Expression) n);
-					// ExpressionStatement ex1 = ast.newExpressionStatement(ex);
+					iftmp.setExpression(ast.newCastExpression());
+
+					// TODO 
+					// ASTNode ifCondition = rewrite.createStringPlaceholder(ex.toString(),
+					// ASTNode.CONDITIONAL_EXPRESSION);
+					ifstate.setExpression(ex);
+				
 					ifstate.setThenStatement(ifbody1);
 					// ifbody1.statements().add(0, read_unlock1);
 					// ifbody1.statements().add(1, write_lock);
@@ -108,9 +115,9 @@ public class RefactoringToMethod implements LockRefactoring{
 					ifbody2.statements().add(0, read_unlock1);
 					ifbody2.statements().add(1, write_lock);
 
-					ifstate2.setExpression(ex);
-					ifstate2.setThenStatement(ifbody2);
-					tlist.add(ifstate2);
+//					ifstate2.setExpression(ex);
+//					ifstate2.setThenStatement(ifbody2);
+//					tlist.add(ifstate2);
 				}
 			}
 
@@ -120,7 +127,7 @@ public class RefactoringToMethod implements LockRefactoring{
 			body1.statements().add(tlist.get(i));
 		}
 
-		// ×îÍâ²ãtry finally
+		// try finally
 		finalblock.statements().add(read_unlock2);
 		trystate.setBody(body1);
 		trystate.setFinally(finalblock);
@@ -132,71 +139,108 @@ public class RefactoringToMethod implements LockRefactoring{
 		return false;
 	}
 
-	@Override
-	public boolean refactoring_downs(AST ast, MethodDeclaration m, String ex,String linenum) {
-		// TODO Auto-generated method stub
-		List<String> readlist=new ArrayList<String>();
-		List<String> writelist=new ArrayList<String>();
-		
+	public boolean temps(AST ast, MethodDeclaration m, String ex, String linenum) {
 		String lockname = result.get(ex);
+
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
+		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+
+		TryStatement trystate1 = ast.newTryStatement();
+		TryStatement trystate2 = ast.newTryStatement();
+		Block finalblock1 = ast.newBlock();
+		Block finalblock2 = ast.newBlock();
+		Block tryblock1 = ast.newBlock();
+		Block tryblock2 = ast.newBlock();
+		Block body = ast.newBlock();
+		Block body1 = ast.newBlock();
+		Block body2 = ast.newBlock();
+
+		body.statements().add(exstate2);
+		body1.statements().add(m.getBody().statements().get(0));
+		trystate1.setBody(body1);
+		finalblock1.statements().add(exstate3);
+		trystate1.setFinally(finalblock1);
+
+		body.statements().add(exstate);
+		body2.statements().add(m.getBody().statements().get(1));
+		trystate2.setBody(body2);
+		finalblock2.statements().add(exstate1);
+		trystate2.setFinally(finalblock2);
+		m.setBody(body);
+		return false;
+
+	}
+
+	@Override
+	public boolean refactoring_downs(AST ast, MethodDeclaration m, String ex, String linenum) {
+		// TODO Auto-generated method stub
+		List<String> readlist = new ArrayList<String>();
+		List<String> writelist = new ArrayList<String>();
+
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		// ï¿½Í·ï¿½ï¿½ï¿½
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+
+		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		int line = 0;
 		char[] c = linenum.toCharArray();
 		while (c[line] != 'R') {
 			line++;
 		}
-		List<Statement> bo=m.getBody().statements();
-		for(int i=0;i<line;i++) {
-			if(bo.get(i) instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement vb=(VariableDeclarationStatement)bo.get(i);
-				VariableDeclarationFragment vdf=(VariableDeclarationFragment)vb.fragments().get(0);
+		List<Statement> bo = m.getBody().statements();
+		for (int i = 0; i < line; i++) {
+			if (bo.get(i) instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement vb = (VariableDeclarationStatement) bo.get(i);
+				VariableDeclarationFragment vdf = (VariableDeclarationFragment) vb.fragments().get(0);
 				writelist.add(vdf.getName().toString());
-			}else if(bo.get(i) instanceof ReturnStatement) {
-				ReturnStatement rs=(ReturnStatement) bo.get(i);
+			} else if (bo.get(i) instanceof ReturnStatement) {
+				ReturnStatement rs = (ReturnStatement) bo.get(i);
 				writelist.add(rs.getExpression().toString());
-			}else if(bo.get(i) instanceof ExpressionStatement) {
-				ExpressionStatement es=(ExpressionStatement)bo.get(i);
-				if(es.getExpression() instanceof FieldAccess) {
-					System.out.println("field");
-					FieldAccess vs=(FieldAccess)es.getExpression();
-					System.out.println(vs.getName());
-				}else if(es.getExpression() instanceof InfixExpression) {
-					
-				}else if(es.getExpression() instanceof PrefixExpression) {
-					PrefixExpression pre=(PrefixExpression)es.getExpression();
+			} else if (bo.get(i) instanceof ExpressionStatement) {
+				ExpressionStatement es = (ExpressionStatement) bo.get(i);
+				if (es.getExpression() instanceof FieldAccess) {
+
+					FieldAccess vs = (FieldAccess) es.getExpression();
+
+				} else if (es.getExpression() instanceof InfixExpression) {
+
+				} else if (es.getExpression() instanceof PrefixExpression) {
+					PrefixExpression pre = (PrefixExpression) es.getExpression();
 					writelist.add(pre.getOperand().toString());
-				}else if(es.getExpression() instanceof PostfixExpression) {
-					PostfixExpression pfe=(PostfixExpression)es.getExpression();
+				} else if (es.getExpression() instanceof PostfixExpression) {
+					PostfixExpression pfe = (PostfixExpression) es.getExpression();
 					writelist.add(pfe.getOperand().toString());
 				}
 			}
-			
+
 		}
-		
-		for(int j=line;j<m.getBody().statements().size();j++) {
-			if(bo.get(j) instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement vb=(VariableDeclarationStatement)bo.get(j);
-				VariableDeclarationFragment vdf=(VariableDeclarationFragment)vb.fragments().get(0);
+
+		for (int j = line; j < m.getBody().statements().size(); j++) {
+			if (bo.get(j) instanceof VariableDeclarationStatement) {
+				VariableDeclarationStatement vb = (VariableDeclarationStatement) bo.get(j);
+				VariableDeclarationFragment vdf = (VariableDeclarationFragment) vb.fragments().get(0);
 				readlist.add(vdf.getName().toString());
-			}else if(bo.get(j) instanceof ReturnStatement) {
-				ReturnStatement rs=(ReturnStatement) bo.get(j);
+			} else if (bo.get(j) instanceof ReturnStatement) {
+				ReturnStatement rs = (ReturnStatement) bo.get(j);
 				readlist.add(rs.getExpression().toString());
 			}
-			
+
 		}
-		Precondition pc=new Precondition(readlist, writelist);
-		//Ç°ÖÃÌõ¼þ
-		if(!pc.canRefactor()) {
+		Precondition pc = new Precondition(readlist, writelist);
+		// Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		if (!pc.canRefactor()) {
 			refactoring_write(ast, m, ex);
 			return true;
 		}
-		
+
 		TryStatement trystate1 = ast.newTryStatement();
 		TryStatement trystate2 = ast.newTryStatement();
 		Block finalblock1 = ast.newBlock();
@@ -247,14 +291,15 @@ public class RefactoringToMethod implements LockRefactoring{
 	@Override
 	public boolean refactoring_up(AST ast, MethodDeclaration m, String ex) {
 		// TODO Auto-generated method stub
+
 		String lockname = result.get(ex);
-		ExpressionStatement read_lock1 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement read_unlock1 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement write_lock = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement write_unlock = exp(ast, lockname,LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement read_unlock2 = exp(ast,lockname,LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		ExpressionStatement read_lock2 = exp(ast, lockname,LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		ExpressionStatement get_write = exp(ast, lockname,"rwLock", "isWriteLockedByCurrentThread");
+		ExpressionStatement read_lock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement read_unlock1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement write_lock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement write_unlock = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement read_unlock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		ExpressionStatement read_lock2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		ExpressionStatement get_write = exp(ast, lockname, "rwLock", "isWriteLockedByCurrentThread");
 		TryStatement trystate = ast.newTryStatement();
 		TryStatement trystate1 = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
@@ -280,16 +325,16 @@ public class RefactoringToMethod implements LockRefactoring{
 				IfStatement iftmp = ((IfStatement) list.get(i));
 				IfStatement ifstate = ast.newIfStatement();
 
-				// É¾³ý¸¸½Úµã
+				// É¾ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½
 				iftmp.delete();
 				Statement tmp = iftmp.getThenStatement();
 				Expression ex1 = iftmp.getExpression();
 
-				// °Ñ¸¸½ÚµãÖÃ¿Õ
+				// ï¿½Ñ¸ï¿½ï¿½Úµï¿½ï¿½Ã¿ï¿½
 				iftmp.setThenStatement(ast.newAssertStatement());
 				iftmp.setExpression(ast.newCastExpression());
 
-				// ÄÚ²ãµÄtry finally
+				// ï¿½Ú²ï¿½ï¿½try finally
 				if (ifbody1.statements().add(tmp)) {
 
 					ifbody1.statements().add(0, read_unlock1);
@@ -320,7 +365,7 @@ public class RefactoringToMethod implements LockRefactoring{
 		ifstate1.setThenStatement(ifbody2);
 		elsebody2.statements().add(read_unlock2);
 		ifstate1.setElseStatement(elsebody2);
-		// ×îÍâ²ãtry finally
+		// ï¿½ï¿½ï¿½ï¿½ï¿½try finally
 		finalblock.statements().add(ifstate1);
 		trystate.setBody(body1);
 		trystate.setFinally(finalblock);
@@ -333,15 +378,15 @@ public class RefactoringToMethod implements LockRefactoring{
 	}
 
 	@Override
-	public boolean refactoring_ups(AST ast, MethodDeclaration m, String ex,String linenum) {
+	public boolean refactoring_ups(AST ast, MethodDeclaration m, String ex, String linenum) {
 		// TODO Auto-generated method stub
 		String lockname = result.get(ex);
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 
 		ExpressionStatement exstate2 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate3 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
 		int line = 0;
 		int assign = 0;
@@ -353,8 +398,7 @@ public class RefactoringToMethod implements LockRefactoring{
 				assign++;
 			}
 		}
-		//³¢ÊÔ°Ñ±äÁ¿µÄÉùÃ÷·ÅÔÚËøÍâÃæ
-		while (c[line] != 'W') {
+		while (line<c.length&&c[line] != 'W') {
 			if (c[line] == 'A') {
 				assign++;
 			}
@@ -424,35 +468,11 @@ public class RefactoringToMethod implements LockRefactoring{
 	}
 
 	@Override
-	public boolean refactoring_read(AST ast, MethodDeclaration m, String ex) {
-		// TODO Auto-generated method stub
-		String lockname = result.get(ex);
-		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
-		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
-		TryStatement trystate = ast.newTryStatement();
-		Block finalblock = ast.newBlock();
-		Block tryblock = ast.newBlock();
-		Block body = ast.newBlock();
-		tryblock = m.getBody();
-		m.setBody(null);
-		finalblock.statements().add(exstate1);
-		trystate.setBody(tryblock);
-		trystate.setFinally(finalblock);
-		if (body.statements().add(trystate)) {
-			body.statements().add(0, exstate);
-			m.setBody(body);
-			return true;
-		}
-		return false;
-	}
-
-	@Override
 	public boolean refactoring_write(AST ast, MethodDeclaration m, String ex) {
 		// TODO Auto-generated method stub
 		String lockname = result.get(ex);
 		ExpressionStatement exstate = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		TryStatement trystate = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
@@ -472,7 +492,6 @@ public class RefactoringToMethod implements LockRefactoring{
 		return false;
 	}
 
-	
 	public ExpressionStatement exp(AST ast, String lockname, String rw, String lock) {
 		MethodInvocation addreadlock = ast.newMethodInvocation();
 		addreadlock.setExpression(ast.newSimpleName(lockname));
@@ -495,7 +514,7 @@ public class RefactoringToMethod implements LockRefactoring{
 	public void refactoring_null(AST ast, MethodDeclaration m) {
 		// TODO Auto-generated method stub
 		ExpressionStatement exstate = exp(ast, "nulock", LockSign.WRITELOCK_SIGN, LockSign.LOCK_SIGN);
-		// ÊÍ·ÅËø
+		// ï¿½Í·ï¿½ï¿½ï¿½
 		ExpressionStatement exstate1 = exp(ast, "nulock", LockSign.WRITELOCK_SIGN, LockSign.UNLOCK_SIGN);
 		TryStatement trystate = ast.newTryStatement();
 		Block finalblock = ast.newBlock();
@@ -511,5 +530,29 @@ public class RefactoringToMethod implements LockRefactoring{
 			body.statements().add(0, exstate);
 			m.setBody(body);
 		}
+	}
+
+	@Override
+	public boolean refactoring_read(AST ast, MethodDeclaration m, String ex) {
+		// TODO Auto-generated method stub
+		String lockname = result.get(ex);
+		ExpressionStatement exstate = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.LOCK_SIGN);
+		// ï¿½Í·ï¿½ï¿½ï¿½
+		ExpressionStatement exstate1 = exp(ast, lockname, LockSign.READLOCK_SIGN, LockSign.UNLOCK_SIGN);
+		TryStatement trystate = ast.newTryStatement();
+		Block finalblock = ast.newBlock();
+		Block tryblock = ast.newBlock();
+		Block body = ast.newBlock();
+		tryblock = m.getBody();
+		m.setBody(null);
+		finalblock.statements().add(exstate1);
+		trystate.setBody(tryblock);
+		trystate.setFinally(finalblock);
+		if (body.statements().add(trystate)) {
+			body.statements().add(0, exstate);
+			m.setBody(body);
+			return true;
+		}
+		return false;
 	}
 }

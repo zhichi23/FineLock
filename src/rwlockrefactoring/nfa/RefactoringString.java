@@ -11,6 +11,7 @@ public interface RefactoringString {
 	//ËøÉı¼¶1
 	Pattern m_p4=Pattern.compile("R+W+");
 	
+	Pattern m_p5=Pattern.compile("R+W+|W+R+");
 	Pattern b_p1=Pattern.compile("MR*CWTR+M");
 	
 	//ËøÉı¼¶

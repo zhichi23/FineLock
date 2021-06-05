@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -303,7 +305,12 @@ public class RWLockRefactoring extends Refactoring {
 			}
 		});
 	}
-
+	
+	Pattern m_pd=Pattern.compile(RWString.stamp_d);
+	Pattern m_pu=Pattern.compile(RWString.stamp_up);
+	Pattern m_po=Pattern.compile(RWString.stamp_op);
+	Pattern m_pr=Pattern.compile(RWString.stamp_r);
+	Matcher m1,m2,m3,m4;
 	@SuppressWarnings("unchecked")
 	private boolean collectChanges(CompilationUnit root, TypeDeclaration types)
 			throws IllegalArgumentException, CallGraphBuilderCancelException, ClassHierarchyException,
@@ -344,12 +351,28 @@ public class RWLockRefactoring extends Refactoring {
 						String rws2 = sda1.makeReToMethod();
 						System.out.println(m.getName()+": "+rws1+">>>>"+rws2);
 						MethodString mstring = new MethodString(rws1, rws2);
-
+						
 						//DFA down_dfa = new DFA(rws1);
 						rutil.addImport(root.imports(), id1);
 						rutil.addImport(root.imports(), id2);
 						m.modifiers().remove(i);
-
+//						if(m_pd.matcher(rws1).matches()) {
+//							count.sy_down_num++;
+//							lf.refactoring_null(ast, m);
+//						}else if (m_po.matcher(rws1).matches()) {
+//							count.sy_op_num++;
+//							lf.refactoring_null(ast, m);
+//						}else if (m_pu.matcher(rws1).matches()) {
+//							count.sy_up_num++;
+//							lf.refactoring_null(ast, m);
+//						}else if (m_pr.matcher(rws1).matches()) {
+//							count.sy_read_num++;
+//							lf.refactoring_null(ast, m);
+//						}else {
+//							count.sy_write_num++;
+//							lf.refactoring_null(ast, m);
+//						}
+						
 						if (rws == null || rws1.length() == 0) {
 							if (zanshi == 0) {
 								rutil.addlock(ast, types, "nulock", true);
@@ -357,9 +380,10 @@ public class RWLockRefactoring extends Refactoring {
 							zanshi++;
 							lf.refactoring_null(ast, m);
 							// writelockToMethod(ast, m, inmap.get(m), result);
-							count.sy_write_num++;
+							//count.sy_write_num++;
 						} else {
 							String s = mstring.match();
+							
 							if (s == "D") {
 								lf.refactoring_down(ast, m, inmap.get(m));
 								count.sy_down_num++;
@@ -367,15 +391,23 @@ public class RWLockRefactoring extends Refactoring {
 								lf.refactoring_up(ast, m, inmap.get(m));
 								count.sy_up_num++;
 							} else if (s == "DS") {
-								lf.refactoring_downs(ast, m, inmap.get(m), rws2);
+								lf.refactoring_write(ast, m, inmap.get(m));
+								//lf.refactoring_downs(ast, m, inmap.get(m), rws2);
+								System.out.println(types.toString()+"---->"+m.getName());
 								count.sy_down_num++;
 							} else if (s == "US") {
+								//lf.refactoring_write(ast, m, inmap.get(m));
 								lf.refactoring_ups(ast, m, inmap.get(m), rws2);
 								count.sy_up_num++;
 							} else if (!rws1.contains(RWSign.WRITE_SIGN)&&rws1.contains(RWSign.READ_SIGN)) {
 								lf.refactoring_read(ast, m, inmap.get(m));
 								count.sy_read_num++;
-							} else {
+							} else if(s == "C"){
+								//É¾³ý
+								lf.refactoring_null(ast, m);
+								count.sy_c++;
+							}else {
+								//lf.refactoring_ups(ast, m, inmap.get(m), rws2);
 								lf.refactoring_write(ast, m, inmap.get(m));
 								count.sy_write_num++;
 							}

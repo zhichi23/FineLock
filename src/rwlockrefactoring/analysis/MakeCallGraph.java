@@ -73,9 +73,7 @@ public class MakeCallGraph {
 		//entrypoints = new AllApplicationEntrypoints(scope, cha);
 
 		AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
-
-		CallGraphBuilder<InstanceKey> builder = Util.makeZeroCFABuilder(Language.JAVA,options, new AnalysisCacheImpl(), cha, scope,
-				null, null);
+		CallGraphBuilder<InstanceKey> builder = Util.makeZeroCFABuilder(Language.JAVA,options, new AnalysisCacheImpl(), cha, scope);
 		CallGraph cg = builder.makeCallGraph(options, null);
 		pointer=builder.getPointerAnalysis();
 		return cg;

@@ -105,10 +105,10 @@ public class SideEffectAnalysis {
 					instructions.add(ins);
 				}
 
-				int tm = instructions.get(instructions.size() - 1).iindex;
+				int tm = instructions.get(instructions.size() - 1).iIndex();
 				int k = 1;
 				while (tm == -1) {
-					tm = instructions.get(instructions.size() - k).iindex;
+					tm = instructions.get(instructions.size() - k).iIndex();
 					k++;
 				}
 
@@ -166,10 +166,10 @@ public class SideEffectAnalysis {
 					instructions.add(ins);
 				}
 
-				int tm = instructions.get(instructions.size() - 1).iindex;
+				int tm = instructions.get(instructions.size() - 1).iIndex();
 				int k = 1;
 				while (tm == -1) {
-					tm = instructions.get(instructions.size() - k).iindex;
+					tm = instructions.get(instructions.size() - k).iIndex();
 					k++;
 				}
 				for (int in = 0; in <= tm; in++) {
@@ -225,10 +225,10 @@ public class SideEffectAnalysis {
 					instructions.add(ins);
 				}
 
-				int tm = instructions.get(instructions.size() - 1).iindex;
+				int tm = instructions.get(instructions.size() - 1).iIndex();
 				int k = 1;
 				while (tm == -1) {
-					tm = instructions.get(instructions.size() - k).iindex;
+					tm = instructions.get(instructions.size() - k).iIndex();
 					k++;
 				}
 				for (int in = 0; in <= tm; in++) {
@@ -282,13 +282,13 @@ public class SideEffectAnalysis {
 					.equals("java/util")) {
 				if (analysisPrimordial(ssai.getDeclaredTarget().getName().toString(), n)) {
 					sb.append(RWSign.READ_SIGN);
-					bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+					bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 					sourceLineNum = method.getLineNumber(bytecodeIndex);
 					map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
 					map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 				} else {
 					sb.append(RWSign.WRITE_SIGN);
-					bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+					bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 					sourceLineNum = method.getLineNumber(bytecodeIndex);
 					map.get(linenum.get(sourceLineNum)).add(RWSign.WRITE_SIGN);
 					map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
@@ -296,13 +296,13 @@ public class SideEffectAnalysis {
 			} else {
 				if (analysisInvokeMethod(ssai.getDeclaredTarget().getName().toString(), n)) {
 					sb.append(RWSign.READ_SIGN);
-					bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+					bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 					sourceLineNum = method.getLineNumber(bytecodeIndex);
 					map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
 					map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 				} else {
 					sb.append(RWSign.WRITE_SIGN);
-					bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+					bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 					sourceLineNum = method.getLineNumber(bytecodeIndex);
 					map.get(linenum.get(sourceLineNum)).add(RWSign.WRITE_SIGN);
 					map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
@@ -311,13 +311,13 @@ public class SideEffectAnalysis {
 			}
 			deep = 0;
 		} else if (ins instanceof SSABinaryOpInstruction) {
-			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.WRITE_SIGN);
 			map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 			sb.append(RWSign.WRITE_SIGN);
 		} else if (ins instanceof SSANewInstruction || ins instanceof SSACheckCastInstruction) {
-			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
 			map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
@@ -325,27 +325,27 @@ public class SideEffectAnalysis {
 		} else if (ins instanceof SSAFieldAccessInstruction) {
 			if (ins instanceof SSAPutInstruction) {
 				sb.append(RWSign.WRITE_SIGN);
-				bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+				bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 				sourceLineNum = method.getLineNumber(bytecodeIndex);
 				map.get(linenum.get(sourceLineNum)).add(RWSign.WRITE_SIGN);
 				map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 			} else {
 				sb.append(RWSign.READ_SIGN);
-				bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+				bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 				sourceLineNum = method.getLineNumber(bytecodeIndex);
 				map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
 				map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 			}
 		} else if (ins instanceof SSAConditionalBranchInstruction) {
 			SSAConditionalBranchInstruction ssac = (SSAConditionalBranchInstruction) ins;
-			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.CONDITION_SIGN);
 			map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 			sb.append(RWSign.CONDITION_SIGN);
 			if_index = ssac.getTarget();
 			l++;
-			while (l < instructions.size() && instructions.get(l).iindex <= if_index) {
+			while (l < instructions.size() && instructions.get(l).iIndex() <= if_index) {
 				sb.append(geteffect(instructions.get(l), n, method));
 			}
 			l--;
@@ -368,12 +368,12 @@ public class SideEffectAnalysis {
 			} else {
 				sb.append(RWSign.ELSE_SIGN);
 				else_index = ssag.getTarget();
-				bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+				bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 				sourceLineNum = method.getLineNumber(bytecodeIndex);
 				map.get(linenum.get(sourceLineNum)).add(RWSign.LOOP_SIGN);
 				map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
 				l++;
-				while (l < instructions.size() && instructions.get(l).iindex <= else_index) {
+				while (l < instructions.size() && instructions.get(l).iIndex() <= else_index) {
 					sb.append(geteffect(instructions.get(l), n, method));
 				}
 				l--;
@@ -388,7 +388,7 @@ public class SideEffectAnalysis {
 			}
 
 		} else if (ins instanceof SSAMonitorInstruction) {
-			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add("M");
 			map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
@@ -401,7 +401,7 @@ public class SideEffectAnalysis {
 				sb.append(RWSign.READ_SIGN);
 			}
 		}else {
-			bytecodeIndex = method.getBytecodeIndex(ins.iindex);
+			bytecodeIndex = method.getBytecodeIndex(ins.iIndex());
 			sourceLineNum = method.getLineNumber(bytecodeIndex);
 			map.get(linenum.get(sourceLineNum)).add(RWSign.READ_SIGN);
 			map.put(linenum.get(sourceLineNum), map.get(linenum.get(sourceLineNum)));
